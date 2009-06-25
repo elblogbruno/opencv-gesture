@@ -1,0 +1,102 @@
+CamShift算法，即"Continuously Apative Mean-Shift"算法，是一种运动跟踪算法。它主要通过视频图像中运动物体的颜色信息来达到跟踪的目的。我把这个算法分解成三个部分，便于理解：
+1) Back Projection计算
+2) Mean Shift算法
+3) CamShift算法
+在这里主要讨论Back Projection,在随后的文章中继续讨论后面两个算法。
+
+Back Projection
+计算Back Projection的步骤是这样的：
+1. 计算被跟踪目标的色彩直方图。在各种色彩空间中，只有HSI空间(或与HSI类似的色彩空间)中的H分量可以表示颜色信息。所以在具体的计算过程中，首先将其他的色彩空间的值转化到HSI空间，然后会其中的H分量做1D直方图计算。
+2. 根据获得的色彩直方图将原始图像转化成色彩概率分布图像，这个过程就被称作"Back Projection"。
+在OpenCV中的直方图函数中，包含Back Projection的函数，函数原型是：
+   void cvCalcBackProject(IplImage** img, CvArr** backproject, const CvHistogram* hist);
+传递给这个函数的参数有三个：
+1. IplImage** img:存放原始图像，输入。
+2. CvArr** backproject:存放Back Projection结果，输出。
+3. CvHistogram* hist:存放直方图，输入
+
+下面就给出计算Back Projection的OpenCV代码。
+1.准备一张只包含被跟踪目标的图片，将色彩空间转化到HSI空间，获得其中的H分量：
+  IplImage* target=cvLoadImage("target.bmp",-1);  //装载图片
+  IplImage* target_hsv=cvCreateImage( cvGetSize(target), IPL_DEPTH_8U, 3 );
+  IplImage* target_hue=cvCreateImage( cvGetSize(target), IPL_DEPTH_8U, 3 );
+  cvCvtColor(target,target_hsv,CV_BGR2HSV);       //转化到HSV空间
+  cvSplit( target_hsv, target_hue, NULL, NULL, NULL );    //获得H分量
+2.计算H分量的直方图，即1D直方图：
+  IplImage* h_plane=cvCreateImage( cvGetSize(target_hsv),IPL_DEPTH_8U,1 );
+  int hist_size[]={255};          //将H分量的值量化到[0,255]
+  float* ranges[]={ {0,360} };    //H分量的取值范围是[0,360)
+  CvHistogram* hist=cvCreateHist(1, hist_size, ranges, 1);
+  cvCalcHist(&target_hue, hist, 0, NULL);
+在这里需要考虑H分量的取值范围的问题，H分量的取值范围是[0,360),这个取值范围的值不能用一个byte来表示，为了能用一个byte表示，需要将H值做适当的量化处理,在这里我们将H分量的范围量化到[0,255].
+4.计算Back Projection：
+  IplImage* rawImage;
+  //----------------------------------------------
+  //get from video frame,unsigned byte,one channel
+  //----------------------------------------------
+  IplImage* result=cvCreateImage(cvGetSize(rawImage),IPL_DEPTH_8U,1);
+  cvCalcBackProject(&rawImage,result,hist);
+5.结果：result即为我们需要的.
+
+ 
+这里来到了CamShift算法，OpenCV实现的第二部分，这一次重点讨论Mean Shift算法。
+在讨论Mean Shift算法之前，首先讨论在2D概率分布图像中，如何计算某个区域的重心(Mass Center)的问题，重心可以通过以下公式来计算：
+1.计算区域内0阶矩
+for(int i=0;i<height;i++)
+  for(int j=0;j<width;j++)
+     M00+=I(i,j)
+2.区域内1阶矩：
+for(int i=0;i<height;i++)
+  for(int j=0;j<width;j++)
+  {
+    M10+=i*I(i,j);
+    M01+=j*I(i,j);
+  }
+3.则Mass Center为：
+Xc=M10/M00; Yc=M01/M00
+接下来，讨论Mean Shift算法的具体步骤，Mean Shift算法可以分为以下4步：
+1.选择窗的大小和初始位置.
+2.计算此时窗口内的Mass Center.
+3.调整窗口的中心到Mass Center.
+4.重复2和3，直到窗口中心"会聚"，即每次窗口移动的距离小于一定的阈值。
+
+在OpenCV中，提供Mean Shift算法的函数，函数的原型是：
+int cvMeanShift(IplImage* imgprob,CvRect windowIn,
+                    CvTermCriteria criteria,CvConnectedComp* out);
+
+需要的参数为：
+1.IplImage* imgprob：2D概率分布图像，传入；
+2.CvRect windowIn：初始的窗口，传入；
+3.CvTermCriteria criteria：停止迭代的标准，传入；
+4.CvConnectedComp* out:查询结果，传出。
+(注：构造CvTermCriteria变量需要三个参数，一个是类型，另一个是迭代的最大次数，最后一个表示特定的阈值。例如可以这样构造criteria：criteria=cvTermCriteria(CV_TERMCRIT_ITER|CV_TERMCRIT_EPS,10,0.1)。)
+
+返回的参数：
+1.int：迭代的次数。
+
+实现代码：暂时缺
+ 
+
+1.原理
+在了解了MeanShift算法以后，我们将MeanShift算法扩展到连续图像序列（一般都是指视频图像序列），这样就形成了CamShift算法。CamShift算法的全称是"Continuously Apaptive Mean-SHIFT"，它的基本思想是视频图像的所有帧作MeanShift运算，并将上一帧的结果（即Search Window的中心和大小）作为下一帧MeanShift算法的Search Window的初始值，如此迭代下去，就可以实现对目标的跟踪。整个算法的具体步骤分5步：
+Step 1：将整个图像设为搜寻区域。
+Step 2：初始话Search Window的大小和位置。
+Step 3：计算Search Window内的彩色概率分布，此区域的大小比Search Window要稍微大一点。
+Step 4：运行MeanShift。获得Search Window新的位置和大小。
+Step 5：在下一帧视频图像中，用Step 3获得的值初始化Search Window的位置和大小。跳转到Step 3继续运行。
+
+2.实现
+在OpenCV中，有实现CamShift算法的函数，此函数的原型是：
+  cvCamShift(IplImage* imgprob, CvRect windowIn, 
+                CvTermCriteria criteria, 
+                CvConnectedComp* out, CvBox2D* box=0);
+其中：
+   imgprob：色彩概率分布图像。
+   windowIn：Search Window的初始值。
+   Criteria：用来判断搜寻是否停止的一个标准。
+   out：保存运算结果,包括新的Search Window的位置和面积。
+   box：包含被跟踪物体的最小矩形。
+
+说明：
+1.在OpenCV 4.0 beta的目录中，有CamShift的例子。遗憾的是这个例子目标的跟踪是半自动的，即需要人手工选定一个目标。我正在努力尝试全自动的目标跟踪，希望可以和大家能在这方面与大家交流。
+
