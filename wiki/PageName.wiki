@@ -1,4 +1,6 @@
-Functionality versus Capability ? A Case in Java OpenCV
+http://selainsoft.blogspot.com/2008/07/functionality-versus-capability-case-in.html
+Cross wall pls.
+
 張貼者： seLain 位於 下午 8:07
 這兩天跟學妹一起在對 Java OpenCV Match Template (以下簡稱 Java OpenCV ) 這個 Tool 作一點修改.
 
