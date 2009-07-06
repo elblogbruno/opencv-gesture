@@ -230,10 +230,6 @@
 					/>
 				</FileConfiguration>
 			</File>
-			<File
-				RelativePath=".\gesrec.rc"
-				>
-			</File>
 		</Filter>
 		<Filter
 			Name="Header Files"
@@ -241,10 +237,6 @@
 			>
 			<File
 				RelativePath="gesrec.h"
-				>
-			</File>
-			<File
-				RelativePath=".\resource.h"
 				>
 			</File>
 		</Filter>
