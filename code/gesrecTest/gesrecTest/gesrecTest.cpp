@@ -33,9 +33,8 @@ int main( int argc, char** argv )
 	IplImage* pImg; //声明IplImage指针
 	//IplImage* histImg;
 	IplImage* pyrImg;
-
-	int area;
-
+	CvHistogram* hist;
+	
 	//载入图像
 	if( argc == 2 && 
 		(pImg = cvLoadImage( argv[1], 1)) != 0 )
@@ -48,16 +47,18 @@ int main( int argc, char** argv )
 		cvNamedWindow("Histogram", 0);
 		cvShowImage("Histogram", histImg);*/
 
-		cvNamedWindow("Pyr", 2);
+		hist = gesSampleSkin(pImg, cvRect(0,0,20,20));
 		pyrImg = cvCreateImage(cvGetSize(pImg), pImg->depth, 1);
-		area = gesDetectHand(pImg, pyrImg);
-		printf("area:%d", area);
+		gesDetectHand(pImg, pyrImg, hist, cvRect(0,0,20,20));
+		
+		cvNamedWindow("Pyr", 2);
 		cvShowImage("Pyr", pyrImg);
 
 		cvWaitKey(0); //等待按键
 
 		/*cvDestroyWindow("Histogram");
 		cvReleaseImage( &histImg);*/
+		cvReleaseHist(&hist);
 		cvDestroyWindow("Pyr");
 		cvReleaseImage(&pyrImg);
 		cvDestroyWindow( "Image" );//销毁窗口

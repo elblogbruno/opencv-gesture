@@ -37,40 +37,55 @@ CvHistogram* gesSampleSkin(const IplImage* src, CvRect window)
 	return hist;
 }
 
-int gesDetectHand(IplImage* src, IplImage* dst)
+int gesDetectHand(IplImage* src, IplImage* dst, CvHistogram* histTemp, CvRect window)
 {
-	int threshold1 = 120;
-	int threshold2 = 30;
-	int block_size = 1000;
-	int level = 4;
-	int i;
-	
-	CvConnectedComp* cur_comp;
-	CvSeq* comp;
-	CvMemStorage* storage;
 	IplImage* srcHSV;
 	IplImage* srcHue;
+	IplImage* curImg;//当前处理的块
+	CvPoint center;//每一小块的中心
+	CvHistogram* hist;//直方图
+	int boundryX, boundryY;
+	int stepX, stepY;
 
+	int sizes[1] = {256};
+	float ranges[1][2] = {{0,360}};
+	float** rangesPtr = new float* [1];
+	rangesPtr[0] = ranges[0];
+
+	//得到源图像的Hue分量
 	srcHSV = cvCreateImage(cvGetSize(src), IPL_DEPTH_8U, 3);
 	srcHue = cvCreateImage(cvGetSize(src), IPL_DEPTH_8U, 1);
 	cvCvtColor(src, srcHSV, CV_BGR2HSV);
 	cvSplit(srcHSV, srcHue, NULL, NULL, NULL);
 
-	//对图像进行金字塔分割
-	storage = cvCreateMemStorage(block_size);
-	cvPyrSegmentation(srcHue, dst, storage, &comp, level, threshold1, threshold2);
-	i = 0;
-	while(i < comp->total)
+	//对图像进行直方图匹配
+	curImg = cvCreateImage(cvSize(window.width, window.height), IPL_DEPTH_8U, 1);
+	center = cvPoint(window.width/2, window.height/2);
+	hist = cvCreateHist(1, sizes, CV_HIST_ARRAY, rangesPtr, 1);
+	stepX = window.width / 2;
+	stepY = window.height / 2;
+	boundryX = src->width - stepX;
+	boundryY = src->height - stepY;
+	for(;center.x < boundryX;center.x += stepX)
 	{
-		cur_comp = (CvConnectedComp* )cvGetSeqElem(comp, i);
-		cvRectangle(dst, cvPoint(cur_comp->rect.x, cur_comp->rect.y),
-			cvPoint(cur_comp->rect.x+cur_comp->rect.width, cur_comp->rect.y+cur_comp->rect.height),
-			cvScalar(255, 0, 0), 1);
-		i++;
+		for(;center.y < boundryY;center.y += stepY)
+		{
+			cvGetRectSubPix(srcHue, curImg, cvPointTo32f(center));
+			cvCalcHist(&curImg, hist);
+			if(cvCompareHist(histTemp, hist, CV_COMP_CORREL) <= 20)
+			{
+				cvRectangle(dst, cvPoint(center.x - stepX, center.y - stepY),
+					cvPoint(center.x + stepX, center.y + stepY), cvScalar(255, 0, 0), 1);
+			}
+		}
 	}
 	
+	//释放内存
 	cvReleaseImage(&srcHSV);
 	cvReleaseImage(&srcHue);
+	cvReleaseImage(&curImg);
+	cvReleaseHist(&hist);
+	delete(rangesPtr);
 
-	return comp->total;
+	return 0;
 }
