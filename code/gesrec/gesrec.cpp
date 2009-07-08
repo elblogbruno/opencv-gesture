@@ -66,13 +66,17 @@ int gesDetectHand(IplImage* src, IplImage* dst, CvHistogram* histTemp, CvRect wi
 	stepY = window.height / 2;
 	boundryX = src->width - stepX;
 	boundryY = src->height - stepY;
-	for(;center.x < boundryX;center.x += stepX)
+	cvNormalizeHist(histTemp, 1);
+	for(;center.x < boundryX;center.x += window.width)
 	{
-		for(;center.y < boundryY;center.y += stepY)
+		for(center.y = stepY;center.y < boundryY;center.y += window.height)
 		{
 			cvGetRectSubPix(srcHue, curImg, cvPointTo32f(center));
 			cvCalcHist(&curImg, hist);
-			if(cvCompareHist(histTemp, hist, CV_COMP_CORREL) <= 20)
+			cvNormalizeHist(hist, 1);
+			//if(cvCompareHist(histTemp, hist, CV_COMP_CORREL) >= 0.8)
+			//if(cvCompareHist(histTemp, hist, CV_COMP_CHISQR) <= 0.3)
+			if(cvCompareHist(histTemp, hist, CV_COMP_INTERSECT) >= 0.3)
 			{
 				cvRectangle(dst, cvPoint(center.x - stepX, center.y - stepY),
 					cvPoint(center.x + stepX, center.y + stepY), cvScalar(255, 0, 0), 1);
