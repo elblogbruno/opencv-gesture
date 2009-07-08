@@ -30,9 +30,9 @@ void histogram(IplImage* pImg, IplImage* histImg)
 
 int main( int argc, char** argv )
 {
-	IplImage* pImg; //声明IplImage指针
-	//IplImage* histImg;
-	IplImage* pyrImg;
+	IplImage* sampleImg;//样本图片
+	IplImage* pImg;//要检测的图片
+	IplImage* outImg;//输出的结果图片
 	CvHistogram* hist;
 	
 	//载入图像
@@ -41,26 +41,24 @@ int main( int argc, char** argv )
 	{
 		cvNamedWindow( "Image", 1 );//创建窗口
 		cvShowImage( "Image", pImg );//显示图像
-		
-		/*histImg = cvCreateImage(cvSize(320,200), 8, 3);
-		histogram(pImg, histImg);
-		cvNamedWindow("Histogram", 0);
-		cvShowImage("Histogram", histImg);*/
 
-		hist = gesSampleSkin(pImg, cvRect(0,0,20,20));
-		pyrImg = cvCreateImage(cvGetSize(pImg), pImg->depth, 1);
-		gesDetectHand(pImg, pyrImg, hist, cvRect(0,0,20,20));
+		//获得样本图片的直方图
+		sampleImg = cvLoadImage("skinsample.JPG", 1);
+		hist = gesSampleSkin(sampleImg, cvRect(0,0,sampleImg->width,sampleImg->height));
+
+		//生成输出图片
+		outImg = cvCreateImage(cvGetSize(pImg), pImg->depth, 3);
+		outImg = cvCloneImage(pImg);
+		gesDetectHand(pImg, outImg, hist, cvRect(0,0,sampleImg->width,sampleImg->height));
 		
-		cvNamedWindow("Pyr", 2);
-		cvShowImage("Pyr", pyrImg);
+		cvNamedWindow("Output", 1);
+		cvShowImage("Output", outImg);
 
 		cvWaitKey(0); //等待按键
 
-		/*cvDestroyWindow("Histogram");
-		cvReleaseImage( &histImg);*/
 		cvReleaseHist(&hist);
-		cvDestroyWindow("Pyr");
-		cvReleaseImage(&pyrImg);
+		cvDestroyWindow("Output");
+		cvReleaseImage(&outImg);
 		cvDestroyWindow( "Image" );//销毁窗口
 		cvReleaseImage( &pImg ); //释放图像
 		return 0;
