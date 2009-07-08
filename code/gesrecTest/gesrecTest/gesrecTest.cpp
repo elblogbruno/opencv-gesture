@@ -49,8 +49,13 @@ int main( int argc, char** argv )
 		//生成输出图片
 		outImg = cvCreateImage(cvGetSize(pImg), pImg->depth, 3);
 		outImg = cvCloneImage(pImg);
-		gesDetectHand(pImg, outImg, hist, cvRect(0,0,sampleImg->width,sampleImg->height));
-		
+		gesDetectHandHistogram(pImg, outImg, hist, cvRect(0,0,sampleImg->width,sampleImg->height));
+
+		/*//生成输出图片
+		outImg = cvCreateImage(cvGetSize(pImg), pImg->depth, 3);
+		outImg = cvCloneImage(pImg);
+		gesDetectHandRange(pImg, outImg);*/
+
 		cvNamedWindow("Output", 1);
 		cvShowImage("Output", outImg);
 
