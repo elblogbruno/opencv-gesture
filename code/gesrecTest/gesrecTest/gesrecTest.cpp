@@ -5,6 +5,9 @@
 #include "cv.h"
 #include "highgui.h"
 #include "gesrec.h"
+#include <stdio.h>
+
+char output[40];
 
 void histogram(IplImage* pImg, IplImage* histImg)
 {
@@ -12,7 +15,7 @@ void histogram(IplImage* pImg, IplImage* histImg)
 	int bin_w;
 	float max_val;
 
-	hist = gesSampleSkin(pImg, cvRect(0,0,pImg->width,pImg->height));
+	hist = gesSampleSkinHistogram(pImg, cvRect(0,0,pImg->width,pImg->height));
 	cvZero(histImg);
 	cvGetMinMaxHistValue(hist, 0, &max_val, 0, 0);
 	cvConvertScale(hist->bins, hist->bins, max_val?255./max_val:0., 0);
@@ -33,35 +36,43 @@ int main( int argc, char** argv )
 	IplImage* sampleImg;//样本图片
 	IplImage* pImg;//要检测的图片
 	IplImage* outImg;//输出的结果图片
-	CvHistogram* hist;
+	CvScalar s;
+	//CvHistogram* hist;
 	
 	//载入图像
-	if( argc == 2 && 
-		(pImg = cvLoadImage( argv[1], 1)) != 0 )
+	if( argc == 3 && 
+		(pImg = cvLoadImage( argv[1], 1)) != 0 &&
+		(sampleImg = cvLoadImage(argv[2], 1)) != 0)
 	{
 		cvNamedWindow( "Image", 1 );//创建窗口
 		cvShowImage( "Image", pImg );//显示图像
 
-		//获得样本图片的直方图
+		/*//获得样本图片的直方图
 		sampleImg = cvLoadImage("skinsample.JPG", 1);
 		hist = gesSampleSkin(sampleImg, cvRect(0,0,sampleImg->width,sampleImg->height));
 
 		//生成输出图片
 		outImg = cvCreateImage(cvGetSize(pImg), pImg->depth, 3);
 		outImg = cvCloneImage(pImg);
-		gesDetectHandHistogram(pImg, outImg, hist, cvRect(0,0,sampleImg->width,sampleImg->height));
+		gesDetectHandHistogram(pImg, outImg, hist, cvRect(0,0,sampleImg->width,sampleImg->height));*/
 
-		/*//生成输出图片
-		outImg = cvCreateImage(cvGetSize(pImg), pImg->depth, 3);
+		//获得样本图片的肤色范围
+		gesSampleSkinRange(sampleImg, &s);
+		sprintf_s(output, "%.2f %.2f %.2f\n", s.val[0], s.val[1], s.val[2]);
+		MessageBox(NULL, output, NULL, MB_OK);
+
+		//生成输出图片
+		outImg = cvCreateImage(cvGetSize(pImg), pImg->depth, 1);
 		outImg = cvCloneImage(pImg);
-		gesDetectHandRange(pImg, outImg);*/
+		gesDetectHandRange(pImg, outImg, &s, 1);
+		//gesDetectHandRange(pImg, outImg);
 
 		cvNamedWindow("Output", 1);
 		cvShowImage("Output", outImg);
 
 		cvWaitKey(0); //等待按键
 
-		cvReleaseHist(&hist);
+		//cvReleaseHist(&hist);
 		cvDestroyWindow("Output");
 		cvReleaseImage(&outImg);
 		cvDestroyWindow( "Image" );//销毁窗口
