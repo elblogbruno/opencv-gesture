@@ -12,4 +12,6 @@ void gesGrayWorld(IplImage* src, IplImage* dst);
 static int gesRectCompFunc(const void* _a, const void* _b, void* userdata);
 CvSeq* gesMultiFloodFill(IplImage* src);
 
+extern "C" __declspec(dllexport) void gesFindContours(IplImage* src, IplImage* dst);
+
 #endif

@@ -246,7 +246,7 @@ static int gesRectCompFunc(const void* _a, const void* _b, void* userdata)
 
 	if(a->area < b->area)
 	{
-		retval = -1;
+		retval = 1;
 	}
 	else if(a->area == b->area)
 	{
@@ -254,7 +254,7 @@ static int gesRectCompFunc(const void* _a, const void* _b, void* userdata)
 	}
 	else
 	{
-		retval = 1;
+		retval = -1;
 	}
 
 	return retval;
