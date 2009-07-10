@@ -9,6 +9,10 @@
 
 char output[40];
 
+void histogram(IplImage* pImg, IplImage* histImg);
+int testImgDetectHandRange(int argc, char** argv);
+int testCamDetectHandRange();
+
 void histogram(IplImage* pImg, IplImage* histImg)
 {
 	CvHistogram* hist;
@@ -31,10 +35,10 @@ void histogram(IplImage* pImg, IplImage* histImg)
 	cvReleaseHist(&hist);
 }
 
-int main( int argc, char** argv )
+int testImgDetectHandRange(int argc, char** argv)
 {
 	IplImage* sampleImg;//样本图片
-	IplImage* pImg;//要检测的图片
+	IplImage* pImg = 0;//要检测的图片
 	IplImage* outImg;//输出的结果图片
 	CvScalar s;
 	//CvHistogram* hist;
@@ -47,12 +51,11 @@ int main( int argc, char** argv )
 		cvNamedWindow( "Image", 1 );//创建窗口
 		cvShowImage( "Image", pImg );//显示图像
 
-		/*//获得样本图片的直方图
-		sampleImg = cvLoadImage("skinsample.JPG", 1);
+		//获得样本图片的直方图
+		/*sampleImg = cvLoadImage("skinsample.JPG", 1);
 		hist = gesSampleSkin(sampleImg, cvRect(0,0,sampleImg->width,sampleImg->height));
 
 		//生成输出图片
-		outImg = cvCreateImage(cvGetSize(pImg), pImg->depth, 3);
 		outImg = cvCloneImage(pImg);
 		gesDetectHandHistogram(pImg, outImg, hist, cvRect(0,0,sampleImg->width,sampleImg->height));*/
 
@@ -62,7 +65,6 @@ int main( int argc, char** argv )
 		MessageBox(NULL, output, NULL, MB_OK);
 
 		//生成输出图片
-		outImg = cvCreateImage(cvGetSize(pImg), pImg->depth, 1);
 		outImg = cvCloneImage(pImg);
 		gesDetectHandRange(pImg, outImg, &s, 1);
 		//gesDetectHandRange(pImg, outImg);
@@ -81,4 +83,55 @@ int main( int argc, char** argv )
 	}
 
 	return -1;
+}
+
+int testCamDetectHandRange()
+{
+	CvCapture* capture = 0;
+	IplImage* output = 0;
+
+	capture = cvCaptureFromCAM(0);
+	if(!capture)
+	{
+		fprintf(stderr, "Could not initialize capturing...\n");
+		return -1;
+	}
+
+	cvNamedWindow("Input", 1);
+	cvNamedWindow("Output", 1);
+		
+	//循环捕捉,直到用户按键跳出循环体
+	for( ; ; )
+	{
+		IplImage* input = 0;
+
+		input = cvQueryFrame(capture);
+		if(!input)
+		{
+			break;
+		}
+
+		cvReleaseImage(&output);
+		output = cvCloneImage(input);
+		gesDetectHandRange(input, output);
+
+		cvShowImage("Input", input);
+		cvShowImage("Output", output);
+		if(cvWaitKey(10) >= 0)
+		{
+			break;
+		}
+	}
+
+	cvReleaseCapture(&capture);
+	cvDestroyWindow("Input");
+	cvDestroyWindow("Output");
+
+	return 1;
+}
+
+int main( int argc, char** argv )
+{
+	testCamDetectHandRange();
+	return 0;
 }
