@@ -237,6 +237,29 @@ void gesGrayWorld(IplImage* src, IplImage* dst)
 	}
 }
 
+//连通区域面积排序方法
+static int gesRectCompFunc(const void* _a, const void* _b, void* userdata)
+{
+	int retval;
+	CvConnectedComp* a = (CvConnectedComp*)_a;
+	CvConnectedComp* b = (CvConnectedComp*)_b;
+
+	if(a->area < b->area)
+	{
+		retval = -1;
+	}
+	else if(a->area == b->area)
+	{
+		retval = 0;
+	}
+	else
+	{
+		retval = 1;
+	}
+
+	return retval;
+}
+
 CvSeq* gesMultiFloodFill(IplImage* src)
 {
 	IplImage* mask;//运算掩码
@@ -279,7 +302,8 @@ CvSeq* gesMultiFloodFill(IplImage* src)
 	//用矩形绘制连通部件
 	i = 0;
 	l_comp = comp->total;
-	while(i < l_comp)
+	cvSeqSort(comp, gesRectCompFunc, 0);//对连通区域按面积排序
+	while(i < min(l_comp, 4))
 	{
 		cur_comp = (CvConnectedComp* )cvGetSeqElem(comp, i);
 		cvRectangle(src, cvPoint(cur_comp->rect.x, cur_comp->rect.y),
@@ -287,7 +311,6 @@ CvSeq* gesMultiFloodFill(IplImage* src)
 					cvScalar(255, 0, 0), 1);
 		i++;
 	}
-
 
 	//释放内存
 	cvReleaseMemStorage(&storage);//貌似不能在这里释放，因为还要用
