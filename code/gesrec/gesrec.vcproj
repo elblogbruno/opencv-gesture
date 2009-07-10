@@ -234,6 +234,10 @@
 				RelativePath=".\recognition.cpp"
 				>
 			</File>
+			<File
+				RelativePath=".\tracking.cpp"
+				>
+			</File>
 		</Filter>
 		<Filter
 			Name="Header Files"
