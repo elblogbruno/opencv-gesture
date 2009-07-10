@@ -132,6 +132,30 @@ int testCamDetectHandRange()
 
 int main( int argc, char** argv )
 {
-	testCamDetectHandRange();
+	IplImage* pImg = 0;//要检测的图片
+	IplImage* outImg;//输出的结果图片
+	
+	//载入图像
+	if( argc == 2 && 
+		(pImg = cvLoadImage( argv[1], 1)) != 0)
+	{
+		cvNamedWindow( "Image", 1 );//创建窗口
+		cvShowImage( "Image", pImg );//显示图像
+
+		outImg = cvCreateImage(cvGetSize(pImg), IPL_DEPTH_8U, 1);
+		gesFindContours(pImg, outImg);
+
+		cvNamedWindow("Output", 1);
+		cvShowImage("Output", outImg);
+
+		cvWaitKey(0); //等待按键
+
+		cvDestroyWindow("Output");
+		cvReleaseImage(&outImg);
+		cvDestroyWindow( "Image" );//销毁窗口
+		cvReleaseImage( &pImg ); //释放图像
+		return 0;
+	}
+
 	return 0;
 }
