@@ -12,6 +12,7 @@ char output[40];
 void histogram(IplImage* pImg, IplImage* histImg);
 int testImgDetectHandRange(int argc, char** argv);
 int testCamDetectHandRange();
+int testImgFindContours(int argc, char** argv);
 
 void histogram(IplImage* pImg, IplImage* histImg)
 {
@@ -130,7 +131,7 @@ int testCamDetectHandRange()
 	return 1;
 }
 
-int main( int argc, char** argv )
+int testImgFindContours(int argc, char** argv)
 {
 	IplImage* pImg = 0;//要检测的图片
 	IplImage* outImg;//输出的结果图片
@@ -158,4 +159,55 @@ int main( int argc, char** argv )
 	}
 
 	return 0;
+}
+
+int main( int argc, char** argv )
+{
+	CvCapture* capture = 0;
+	IplImage* output = 0;
+	IplImage* input = 0;
+	
+	capture = cvCaptureFromCAM(0);
+	if(!capture)
+	{
+		fprintf(stderr, "Could not initialize capturing...\n");
+		return -1;
+	}
+	cvNamedWindow("Input", 1);
+	cvNamedWindow("Output", 1);
+
+	//捕捉第一帧以初始化输出
+	input = cvQueryFrame(capture);
+	if(!input)
+	{
+		return 0;
+	}
+	output = cvCreateImage(cvGetSize(input), IPL_DEPTH_8U, 1);
+	
+	//循环捕捉,直到用户按键跳出循环体
+	for( ; ; )
+	{
+		input = cvQueryFrame(capture);
+		if(!input)
+		{
+			break;
+		}
+
+		cvZero(output);
+		gesFindContours(input, output);
+
+		cvShowImage("Input", input);
+		cvShowImage("Output", output);
+		if(cvWaitKey(10) >= 0)
+		{
+			break;
+		}
+	}
+
+	cvReleaseCapture(&capture);
+	cvDestroyWindow("Input");
+	cvDestroyWindow("Output");
+	cvReleaseImage(&output);
+
+	return 1;
 }
