@@ -14,6 +14,6 @@ void gesMultiFloodFill(IplImage* src, CvMemStorage* storage, CvSeq* comp);
 
 extern "C" __declspec(dllexport) void gesFindContours(IplImage* src, IplImage* dst);
 
-extern "C" __declspec(dllexport) void gesTracking(IplImage* src, IplImage* dst, CvSeq* seq, CvSeq* seq_out, CvScalar* s);
+extern "C" __declspec(dllexport) void gesTracking(IplImage* src, IplImage* dst, CvSeq* seq, CvSeq* seq_out, CvScalar* s, int flag = 0);
 
 #endif
