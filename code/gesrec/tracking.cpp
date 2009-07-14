@@ -2,7 +2,7 @@
 
 #include "gesrec.h"
 
-void gesTracking(IplImage* src, IplImage* dst, CvSeq* seq, CvSeq* seq_out, CvScalar* s) {
+void gesTracking(IplImage* src, IplImage* dst, CvSeq* seq, CvSeq* seq_out, CvScalar* s, int flag) {
 	
 	int i = 0;
 	double range1, range2, range3, range4;
@@ -11,10 +11,21 @@ void gesTracking(IplImage* src, IplImage* dst, CvSeq* seq, CvSeq* seq_out, CvSca
 	int seq_num = seq->total;
 	CvMemStorage* storage;//动态内存
 
-	range1 = s->val[1] - 10;
-	range2 = s->val[1] + 10;
-	range3 = s->val[2] - 10;
-	range4 = s->val[2] + 10;
+	//设置肤色的范围
+	if(flag)//根据样品设置肤色范围
+	{
+		range1 = s->val[1] - 10;
+		range2 = s->val[1] + 10;
+		range3 = s->val[2] - 10;
+		range4 = s->val[2] + 10;
+	}
+	else//自动设置肤色范围
+	{
+		range1 = 143;//133
+		range2 = 163;//173
+		range3 = 77;//77
+		range4 = 127;//127
+	}
 
 	CvRect rect;
 	int tempNum = 0;
