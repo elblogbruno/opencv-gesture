@@ -42,6 +42,8 @@ int testImgDetectHandRange(int argc, char** argv)
 	IplImage* pImg = 0;//要检测的图片
 	IplImage* outImg;//输出的结果图片
 	CvScalar s;
+	CvSeq* comp;//连通部件
+	CvMemStorage* storage;//动态内存
 	//CvHistogram* hist;
 	
 	//载入图像
@@ -51,6 +53,10 @@ int testImgDetectHandRange(int argc, char** argv)
 	{
 		cvNamedWindow( "Image", 1 );//创建窗口
 		cvShowImage( "Image", pImg );//显示图像
+
+		//初始化动态内存与连通部件
+		storage = cvCreateMemStorage(0);
+		comp = cvCreateSeq(0, sizeof(CvSeq), sizeof(CvConnectedComp), storage);
 
 		//获得样本图片的直方图
 		/*sampleImg = cvLoadImage("skinsample.JPG", 1);
@@ -67,7 +73,7 @@ int testImgDetectHandRange(int argc, char** argv)
 
 		//生成输出图片
 		outImg = cvCloneImage(pImg);
-		gesDetectHandRange(pImg, outImg, &s, 1);
+		gesDetectHandRange(pImg, outImg, storage, comp, &s, 1);
 		//gesDetectHandRange(pImg, outImg);
 
 		cvNamedWindow("Output", 1);
@@ -76,6 +82,7 @@ int testImgDetectHandRange(int argc, char** argv)
 		cvWaitKey(0); //等待按键
 
 		//cvReleaseHist(&hist);
+		cvReleaseMemStorage(&storage);
 		cvDestroyWindow("Output");
 		cvReleaseImage(&outImg);
 		cvDestroyWindow( "Image" );//销毁窗口
@@ -86,10 +93,29 @@ int testImgDetectHandRange(int argc, char** argv)
 	return -1;
 }
 
-int testCamDetectHandRange()
+int testCamDetectHandRange(int argc, char** argv)
 {
 	CvCapture* capture = 0;
 	IplImage* output = 0;
+	IplImage* sampleImg;//样本图片
+	CvScalar s;
+	CvSeq* comp;//连通部件
+	CvMemStorage* storage;//动态内存
+
+	if(argc == 2)
+	{
+		if((sampleImg = cvLoadImage(argv[1], 1)) == 0)
+		{
+			fprintf(stderr, "Could not open sample image\n");
+			return 0;
+		}
+		else
+		{
+			//获得样本图片的肤色范围
+			gesSampleSkinRange(sampleImg, &s);
+			cvReleaseImage(&sampleImg);
+		}
+	}
 
 	capture = cvCaptureFromCAM(0);
 	if(!capture)
@@ -101,6 +127,10 @@ int testCamDetectHandRange()
 	cvNamedWindow("Input", 1);
 	cvNamedWindow("Output", 1);
 		
+	//初始化动态内存与连通部件
+	storage = cvCreateMemStorage(0);
+	comp = cvCreateSeq(0, sizeof(CvSeq), sizeof(CvConnectedComp), storage);
+
 	//循环捕捉,直到用户按键跳出循环体
 	for( ; ; )
 	{
@@ -114,7 +144,14 @@ int testCamDetectHandRange()
 
 		cvReleaseImage(&output);
 		output = cvCloneImage(input);
-		gesDetectHandRange(input, output);
+		if(argc == 1)
+		{
+			gesDetectHandRange(input, output, storage, comp);
+		}
+		else
+		{
+			gesDetectHandRange(input, output, storage, comp, &s, 1);
+		}
 
 		cvShowImage("Input", input);
 		cvShowImage("Output", output);
@@ -125,6 +162,7 @@ int testCamDetectHandRange()
 	}
 
 	cvReleaseCapture(&capture);
+	cvReleaseMemStorage(&storage);
 	cvDestroyWindow("Input");
 	cvDestroyWindow("Output");
 
@@ -161,7 +199,7 @@ int testImgFindContours(int argc, char** argv)
 	return 0;
 }
 
-int main( int argc, char** argv )
+int testCamFindContours()
 {
 	CvCapture* capture = 0;
 	IplImage* output = 0;
@@ -208,6 +246,58 @@ int main( int argc, char** argv )
 	cvDestroyWindow("Input");
 	cvDestroyWindow("Output");
 	cvReleaseImage(&output);
+	
+	return 0;
+}
+
+int getImgFromCAM(int argc, char** argv)
+{
+	CvCapture* capture = 0;
+
+	capture = cvCaptureFromCAM(0);
+	if(!capture)
+	{
+		fprintf(stderr, "Could not initialize capturing...\n");
+		return -1;
+	}
+
+	cvNamedWindow("Input", 1);
+		
+	//循环捕捉,直到用户按键跳出循环体
+	for( ; ; )
+	{
+		IplImage* input = 0;
+
+		input = cvQueryFrame(capture);
+		if(!input)
+		{
+			break;
+		}
+
+		cvShowImage("Input", input);
+		if(cvWaitKey(10) >= 0)
+		{
+			if(argc == 2)
+			{
+				if(!cvSaveImage(argv[1], input))
+				{
+					printf("Could not save : %s\n", argv[1]);
+				}
+			}
+			break;
+		}
+	}
+
+	cvReleaseCapture(&capture);
+	cvDestroyWindow("Input");
+	
+	return 1;
+}
+
+int main( int argc, char** argv )
+{
+	testCamDetectHandRange(argc, argv);
+	//getImgFromCAM(argc, argv);
 
 	return 1;
 }

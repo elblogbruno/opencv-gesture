@@ -126,7 +126,7 @@ void gesSampleSkinRange(IplImage* src, CvScalar* s)
 }
 
 //dst为单通道的图像
-void gesDetectHandRange(IplImage* src, IplImage* dst, CvScalar* s, int flag)
+void gesDetectHandRange(IplImage* src, IplImage* dst, CvMemStorage* storage, CvSeq* comp, CvScalar* s, int flag)
 {
 	IplImage* srcYCrCb;
 	CvScalar tempS;
@@ -175,7 +175,7 @@ void gesDetectHandRange(IplImage* src, IplImage* dst, CvScalar* s, int flag)
 		}
 	}
 
-	gesMultiFloodFill(dst);
+	gesMultiFloodFill(dst, storage, comp);
 
 	//对结果图像进行开操作，去除杂质
 	//kernel = cvCreateStructuringElementEx(7, 7, 3, 3, CV_SHAPE_RECT);
@@ -260,24 +260,21 @@ static int gesRectCompFunc(const void* _a, const void* _b, void* userdata)
 	return retval;
 }
 
-CvSeq* gesMultiFloodFill(IplImage* src)
+void gesMultiFloodFill(IplImage* src, CvMemStorage* storage, CvSeq* comp)
 {
 	IplImage* mask;//运算掩码
 	CvScalar tempS1, tempS2;
 	CvConnectedComp tempComp;
-	CvSeq* comp;//连通部件
-	CvMemStorage* storage;//动态内存
 	CvConnectedComp* cur_comp;
 	int i, j;
 	int l_comp;
 
-	//初始化动态内存与连通部件
-	storage = cvCreateMemStorage(0);
-	comp = cvCreateSeq(0, sizeof(CvSeq), sizeof(CvConnectedComp), storage);
-
 	//初始化掩码
 	mask = cvCreateImage(cvSize(src->width + 2, src->height + 2), IPL_DEPTH_8U, 1);
 	cvZero(mask);
+
+	//清空序列
+	cvClearSeq(comp);
 
 	//遍历图像，寻找连通区域
 	for(i = 0;i < src->width;i++)
@@ -313,8 +310,5 @@ CvSeq* gesMultiFloodFill(IplImage* src)
 	}
 
 	//释放内存
-	cvReleaseMemStorage(&storage);//貌似不能在这里释放，因为还要用
 	cvReleaseImage(&mask);
-
-	return comp;
 }
