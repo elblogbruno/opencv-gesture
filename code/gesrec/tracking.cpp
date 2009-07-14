@@ -32,7 +32,7 @@ void gesTracking(IplImage* src, IplImage* dst, CvSeq* seq, CvSeq* seq_out, CvSca
 	int tempNum = 0;
 	int sign = 0;
 
-	while( i < seq_num ) {
+	while( i < min(seq_num, 4) ) {
 		sign = 0;
 		aComp = (CvConnectedComp* )cvGetSeqElem(seq, i);
 		rect = aComp->rect;
