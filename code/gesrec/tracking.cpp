@@ -1,6 +1,7 @@
 #define NUMS 4
 
 #include "gesrec.h"
+#include <stdio.h>
 
 void gesTracking(IplImage* src, IplImage* dst, CvSeq* seq, CvSeq* seq_out, CvScalar* s, int flag) {
 	
@@ -104,7 +105,7 @@ void gesTracking(IplImage* src, IplImage* dst, CvSeq* seq, CvSeq* seq_out, CvSca
 				}
 			}
 			if(tempNum < NUMS) {
-				rect.x -= 1;
+				rect.x += 1;
 			} else {
 				break;
 			}
@@ -249,7 +250,7 @@ void gesTracking(IplImage* src, IplImage* dst, CvSeq* seq, CvSeq* seq_out, CvSca
 				}
 			}
 			if(tempNum < NUMS) {
-				rect.y -= 1;
+				rect.y += 1;
 			} else {
 				break;
 			}
@@ -338,6 +339,7 @@ void gesTracking(IplImage* src, IplImage* dst, CvSeq* seq, CvSeq* seq_out, CvSca
 	
 	while(i < min(sizeofSeq_out, 4))
 	{
+		printf("%d\n", i);
 		aComp = (CvConnectedComp* )cvGetSeqElem(seq_out, i);
 		cvRectangle(dst, cvPoint(aComp->rect.x, aComp->rect.y),
 					cvPoint(aComp->rect.x + aComp->rect.width, aComp->rect.y + aComp->rect.height), 
