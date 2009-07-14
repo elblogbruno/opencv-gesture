@@ -6,6 +6,7 @@
 void gesTracking(IplImage* src, IplImage* dst, CvSeq* seq, CvSeq* seq_out, CvScalar* s, int flag) {
 	
 	int i = 0;
+	IplImage* srcYCrCb;
 	double range1, range2, range3, range4;
 	CvScalar tempS;
 	CvConnectedComp* aComp;
@@ -27,27 +28,31 @@ void gesTracking(IplImage* src, IplImage* dst, CvSeq* seq, CvSeq* seq_out, CvSca
 		range4 = 127;//127
 	}
 
+	cvSmooth(src, src, CV_GAUSSIAN);
+	srcYCrCb = cvCreateImage(cvGetSize(src), IPL_DEPTH_8U, 3);
+	cvCvtColor(src, srcYCrCb, CV_BGR2YCrCb);
+
 	CvRect rect;
 	int tempNum = 0;
 	int sign = 0;
+	cvClearSeq(seq_out);
 
 	while( i < min(seq_num, 4) ) {
 		sign = 0;
 		aComp = (CvConnectedComp* )cvGetSeqElem(seq, i);
 		rect = aComp->rect;
-		printf("%d, %d, %d, %d\n", aComp->rect.x, aComp->rect.y, aComp->rect.width, aComp->rect.height);
+		
 		int tempx = 0;
 		int tempy = 0;
 
 		// x 最左列
-		printf("1\n");
 		tempx = rect.x - 1;
 		tempNum = 0;
-		for(int k = rect.y; k < min(src->height, rect.y + rect.height); k++) {
+		for(int k = rect.y; k < min(srcYCrCb->height, rect.y + rect.height); k++) {
 			if(tempx < 0) {
 				break;
 			}
-			tempS = cvGet2D(src, k, tempx);
+			tempS = cvGet2D(srcYCrCb, k, tempx);
 			if(tempS.val[1] >= range1 && tempS.val[1] <= range2 && 
 				tempS.val[2] >= range3 && tempS.val[2] <= range4) {
 				tempNum++;
@@ -64,15 +69,13 @@ void gesTracking(IplImage* src, IplImage* dst, CvSeq* seq, CvSeq* seq_out, CvSca
 		if(tempNum < NUMS) {
 			sign = -1;
 		}
-		printf("1.1\n");
+		
 		while(rect.x > 0 && sign == 1) {
 			tempx = rect.x - 1;
 			tempNum = 0;
-			for(int k = rect.y; k < min(src->height, rect.y + rect.height); k++) {
-				if(tempx < 0) {
-					break;
-				}
-				tempS = cvGet2D(src, k, tempx);
+			for(int k = rect.y; k < min(srcYCrCb->height, rect.y + rect.height); k++) {
+				
+				tempS = cvGet2D(srcYCrCb, k, tempx);
 				if(tempS.val[1] >= range1 && tempS.val[1] <= range2 && 
 					tempS.val[2] >= range3 && tempS.val[2] <= range4) {
 					tempNum++;
@@ -89,15 +92,13 @@ void gesTracking(IplImage* src, IplImage* dst, CvSeq* seq, CvSeq* seq_out, CvSca
 				break;
 			}
 		}
-		printf("1.2\n");
-		while( ( (rect.x+rect.width) < src->width-1 ) && sign == -1) {
+		
+		while( ( rect.x < srcYCrCb->width-1 ) && rect.width > 0 && sign == -1) {
 			tempx = rect.x + 1;
 			tempNum = 0;
-			for(int k = rect.y; k < min(src->height, rect.y + rect.height); k++) {
-				if( (tempx + rect.width) >= src->width-1) {
-					break;
-				}
-				tempS = cvGet2D(src, k, tempx);
+			for(int k = rect.y; k < min(srcYCrCb->height, rect.y + rect.height); k++) {
+				
+				tempS = cvGet2D(srcYCrCb, k, tempx);
 				if(tempS.val[1] >= range1 && tempS.val[1] <= range2 && 
 					tempS.val[2] >= range3 && tempS.val[2] <= range4) {
 					tempNum++;
@@ -108,26 +109,23 @@ void gesTracking(IplImage* src, IplImage* dst, CvSeq* seq, CvSeq* seq_out, CvSca
 					tempNum = 0;
 				}
 			}
+			
 			if(tempNum < NUMS) {
 				rect.x += 1;
 				rect.width -= 1;
-				if(rect.width <= 0) {
-					break;
-				}
 			} else {
 				break;
 			}
 		}
 
 		// x 最右列
-		printf("2\n");
-		tempx = min( rect.x + rect.width + 1, src->width-1 );
+		tempx = min( rect.x + rect.width + 1, srcYCrCb->width-1 );
 		tempNum = 0;
-		for(int k = rect.y; k < min(src->height, rect.y + rect.height); k++) {
-			if( tempx >= src->width-1) {
+		for(int k = rect.y; k < min(srcYCrCb->height, rect.y + rect.height); k++) {
+			if( tempx >= srcYCrCb->width-1) {
 				break;
 			}
-			tempS = cvGet2D(src, k, tempx);
+			tempS = cvGet2D(srcYCrCb, k, tempx);
 			if(tempS.val[1] >= range1 && tempS.val[1] <= range2 && 
 				tempS.val[2] >= range3 && tempS.val[2] <= range4) {
 				tempNum++;
@@ -143,15 +141,15 @@ void gesTracking(IplImage* src, IplImage* dst, CvSeq* seq, CvSeq* seq_out, CvSca
 		if(tempNum < NUMS) {
 			sign = -1;
 		}
-		printf("2.1\n");
-		while( (rect.x + rect.width) < (src->width-1) && sign == 1) {
-			tempx = min( rect.x + rect.width + 1, src->width-1 );
+		
+		while( (rect.x + rect.width) < (srcYCrCb->width-1) && sign == 1) {
+			tempx = min( rect.x + rect.width + 1, srcYCrCb->width-1 );
 			tempNum = 0;
-			for(int k = rect.y; k < min(src->height, rect.y + rect.height); k++) {
-				if( tempx >= src->width-1) {
+			for(int k = rect.y; k < min(srcYCrCb->height, rect.y + rect.height); k++) {
+				if( tempx >= srcYCrCb->width-1) {
 					break;
 				}
-				tempS = cvGet2D(src, k, tempx);
+				tempS = cvGet2D(srcYCrCb, k, tempx);
 				if(tempS.val[1] >= range1 && tempS.val[1] <= range2 && 
 					tempS.val[2] >= range3 && tempS.val[2] <= range4) {
 					tempNum++;
@@ -167,15 +165,15 @@ void gesTracking(IplImage* src, IplImage* dst, CvSeq* seq, CvSeq* seq_out, CvSca
 				break;
 			}
 		}
-		printf("2.2\n");
+		
 		while( rect.width > 0 && sign == -1) {
 			tempx = max( rect.x + rect.width - 1, 0 );
 			tempNum = 0;
-			for(int k = rect.y; k < min(src->height, rect.y + rect.height); k++) {
+			for(int k = rect.y; k < min(srcYCrCb->height, rect.y + rect.height); k++) {
 				if(tempx <= rect.x) {
 					break;
 				}
-				tempS = cvGet2D(src, k, tempx);
+				tempS = cvGet2D(srcYCrCb, k, tempx);
 				if(tempS.val[1] >= range1 && tempS.val[1] <= range2 && 
 					tempS.val[2] >= range3 && tempS.val[2] <= range4) {
 					tempNum++;
@@ -195,14 +193,13 @@ void gesTracking(IplImage* src, IplImage* dst, CvSeq* seq, CvSeq* seq_out, CvSca
 
 
 		// y 最左列
-		printf("3\n");
 		tempy = rect.y - 1;
 		tempNum = 0;
-		for(int k = rect.x; k < min(src->width, rect.x + rect.width); k++) {
+		for(int k = rect.x; k < min(srcYCrCb->width, rect.x + rect.width); k++) {
 			if(tempy < 0) {
 				break;
 			}
-			tempS = cvGet2D(src, tempy, k);
+			tempS = cvGet2D(srcYCrCb, tempy, k);
 			if(tempS.val[1] >= range1 && tempS.val[1] <= range2 && 
 				tempS.val[2] >= range3 && tempS.val[2] <= range4) {
 				tempNum++;
@@ -219,15 +216,15 @@ void gesTracking(IplImage* src, IplImage* dst, CvSeq* seq, CvSeq* seq_out, CvSca
 		if(tempNum < NUMS) {
 			sign = -1;
 		}
-		printf("3.1\n");
+		
 		while(rect.y > 0 && sign == 1) {
 			tempy = rect.y - 1;
 			tempNum = 0;
-			for(int k = rect.x; k < min(src->width, rect.x + rect.width); k++) {
+			for(int k = rect.x; k < min(srcYCrCb->width, rect.x + rect.width); k++) {
 				if(tempy < 0) {
 					break;
 				}
-				tempS = cvGet2D(src, tempy, k);
+				tempS = cvGet2D(srcYCrCb, tempy, k);
 				if(tempS.val[1] >= range1 && tempS.val[1] <= range2 && 
 					tempS.val[2] >= range3 && tempS.val[2] <= range4) {
 					tempNum++;
@@ -244,15 +241,15 @@ void gesTracking(IplImage* src, IplImage* dst, CvSeq* seq, CvSeq* seq_out, CvSca
 				break;
 			}
 		}
-		printf("3.2\n");
-		while( ( (rect.y+rect.height) < src->height-1 ) && sign == -1) {
+		
+		while( ( rect.y < srcYCrCb->height-1 ) && rect.height > 0 && sign == -1) {
 			tempy = rect.y + 1;
 			tempNum = 0;
-			for(int k = rect.x; k < min(src->width, rect.x + rect.width); k++) {
-				if( (tempy + rect.height) >= src->height-1) {
+			for(int k = rect.x; k < min(srcYCrCb->width, rect.x + rect.width); k++) {
+				if( (tempy + rect.height) >= srcYCrCb->height-1) {
 					break;
 				}
-				tempS = cvGet2D(src, tempy, k);
+				tempS = cvGet2D(srcYCrCb, tempy, k);
 				if(tempS.val[1] >= range1 && tempS.val[1] <= range2 && 
 					tempS.val[2] >= range3 && tempS.val[2] <= range4) {
 					tempNum++;
@@ -266,23 +263,19 @@ void gesTracking(IplImage* src, IplImage* dst, CvSeq* seq, CvSeq* seq_out, CvSca
 			if(tempNum < NUMS) {
 				rect.y += 1;
 				rect.height -= 1;
-				if(rect.height <= 0) {
-					break;
-				}
 			} else {
 				break;
 			}
 		}
 
 		// y 最右列
-		printf("4\n");
-		tempy = min( rect.y + rect.height + 1, src->height-1 );
+		tempy = min( rect.y + rect.height + 1, srcYCrCb->height-1 );
 		tempNum = 0;
-		for(int k = rect.x; k < min(src->width, rect.x + rect.width); k++) {
-			if( tempy >= src->height-1) {
+		for(int k = rect.x; k < min(srcYCrCb->width, rect.x + rect.width); k++) {
+			if( tempy >= srcYCrCb->height-1) {
 				break;
 			}
-			tempS = cvGet2D(src, tempy, k);
+			tempS = cvGet2D(srcYCrCb, tempy, k);
 			if(tempS.val[1] >= range1 && tempS.val[1] <= range2 && 
 				tempS.val[2] >= range3 && tempS.val[2] <= range4) {
 				tempNum++;
@@ -298,15 +291,15 @@ void gesTracking(IplImage* src, IplImage* dst, CvSeq* seq, CvSeq* seq_out, CvSca
 		if(tempNum < NUMS) {
 			sign = -1;
 		}
-		printf("4.1\n");
-		while( (rect.y + rect.height) < (src->height-1) && sign == 1) {
-			tempy = min( rect.y + rect.height + 1, src->height-1 );
+		
+		while( (rect.y + rect.height) < (srcYCrCb->height-1) && sign == 1) {
+			tempy = min( rect.y + rect.height + 1, srcYCrCb->height-1 );
 			tempNum = 0;
-			for(int k = rect.x; k < min(src->width, rect.x + rect.width); k++) {
-				if( tempy >= src->height-1) {
+			for(int k = rect.x; k < min(srcYCrCb->width, rect.x + rect.width); k++) {
+				if( tempy >= srcYCrCb->height-1) {
 					break;
 				}
-				tempS = cvGet2D(src, tempy, k);
+				tempS = cvGet2D(srcYCrCb, tempy, k);
 				if(tempS.val[1] >= range1 && tempS.val[1] <= range2 && 
 					tempS.val[2] >= range3 && tempS.val[2] <= range4) {
 					tempNum++;
@@ -322,15 +315,15 @@ void gesTracking(IplImage* src, IplImage* dst, CvSeq* seq, CvSeq* seq_out, CvSca
 				break;
 			}
 		}
-		printf("4.2\n");
+		
 		while( rect.height > 0 && sign == -1) {
 			tempy = max( rect.y + rect.height - 1, 0 );
 			tempNum = 0;
-			for(int k = rect.x; k < min(src->width, rect.x + rect.width); k++) {
+			for(int k = rect.x; k < min(srcYCrCb->width, rect.x + rect.width); k++) {
 				if(tempy <= rect.y) {
 					break;
 				}
-				tempS = cvGet2D(src, tempy, k);
+				tempS = cvGet2D(srcYCrCb, tempy, k);
 				if(tempS.val[1] >= range1 && tempS.val[1] <= range2 && 
 					tempS.val[2] >= range3 && tempS.val[2] <= range4) {
 					tempNum++;
@@ -351,6 +344,7 @@ void gesTracking(IplImage* src, IplImage* dst, CvSeq* seq, CvSeq* seq_out, CvSca
 		i++;
 		
 		aComp->rect = rect;
+		
 		cvSeqPush(seq_out, aComp);
 	}
 
@@ -361,6 +355,9 @@ void gesTracking(IplImage* src, IplImage* dst, CvSeq* seq, CvSeq* seq_out, CvSca
 	while(i < min(sizeofSeq_out, 4))
 	{
 		aComp = (CvConnectedComp* )cvGetSeqElem(seq_out, i);
+
+		printf("%d, %d, %d, %d\n", aComp->rect.x, aComp->rect.y, aComp->rect.width, aComp->rect.height);
+
 		cvRectangle(dst, cvPoint(aComp->rect.x, aComp->rect.y),
 					cvPoint(aComp->rect.x + aComp->rect.width, aComp->rect.y + aComp->rect.height), 
 					cvScalar(255, 0, 0), 1);

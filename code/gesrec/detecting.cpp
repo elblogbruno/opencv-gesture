@@ -274,10 +274,7 @@ void gesMultiFloodFill(IplImage* src, CvSeq* comp)
 	cvZero(mask);
 
 	//清空序列
-	if(comp != 0)
-	{
-		cvClearSeq(comp);
-	}
+	cvClearSeq(comp);
 
 	//遍历图像，寻找连通区域
 	for(i = 0;i < src->width;i++)
