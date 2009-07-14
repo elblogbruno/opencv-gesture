@@ -2,9 +2,7 @@
 
 #include "gesrec.h"
 
-//int getPointNum(IplImage* src, 
-
-CvSeq* gesTracking(IplImage* src, CvSeq* seq, CvScalar* s) {
+void gesTracking(IplImage* src, IplImage* dst, CvSeq* seq, CvSeq* seq_out, CvScalar* s) {
 	
 	int i = 0;
 	double range1, range2, range3, range4;
@@ -12,15 +10,11 @@ CvSeq* gesTracking(IplImage* src, CvSeq* seq, CvScalar* s) {
 	CvConnectedComp* aComp;
 	int seq_num = seq->total;
 	CvMemStorage* storage;//¶¯Ì¬ÄÚ´æ
-	CvSeq* curr_seq;
 
 	range1 = s->val[1] - 10;
 	range2 = s->val[1] + 10;
 	range3 = s->val[2] - 10;
 	range4 = s->val[2] + 10;
-
-	storage = cvCreateMemStorage(0);
-	curr_seq = cvCreateSeq(0, sizeof(CvSeq), sizeof(CvConnectedComp), storage);
 
 	CvRect rect;
 	int tempNum = 0;
@@ -324,8 +318,6 @@ CvSeq* gesTracking(IplImage* src, CvSeq* seq, CvScalar* s) {
 
 		i++;
 		aComp->rect = rect;
-		cvSeqPush(curr_seq, aComp);
+		cvSeqPush(seq_out, aComp);
 	}
-
-	return curr_seq;
 }
