@@ -151,10 +151,10 @@ void gesDetectHandRange(IplImage* src, IplImage* dst, CvMemStorage* storage, CvS
 	}
 	else//自动设置肤色范围
 	{
-		range1 = 133;
-		range2 = 173;
-		range3 = 77;
-		range4 = 127;
+		range1 = 143;//133
+		range2 = 163;//173
+		range3 = 77;//77
+		range4 = 127;//127
 	}
 
 	//遍历图像，找到属于肤色范围的那些像素
