@@ -320,4 +320,17 @@ void gesTracking(IplImage* src, IplImage* dst, CvSeq* seq, CvSeq* seq_out, CvSca
 		aComp->rect = rect;
 		cvSeqPush(seq_out, aComp);
 	}
+
+	//用矩形绘制连通部件
+	i = 0;
+	int sizeofSeq_out = seq_out->total;
+	
+	while(i < min(sizeofSeq_out, 4))
+	{
+		aComp = (CvConnectedComp* )cvGetSeqElem(seq_out, i);
+		cvRectangle(dst, cvPoint(aComp->rect.x, aComp->rect.y),
+					cvPoint(aComp->rect.x + aComp->rect.width, aComp->rect.y + aComp->rect.height), 
+					cvScalar(255, 0, 0), 1);
+		i++;
+	}
 }
