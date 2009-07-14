@@ -12,7 +12,7 @@ int testTracking(int argc, char** argv)
 	IplImage* output = 0;
 	IplImage* sampleImg;//样本图片
 	CvScalar s;
-	CvSeq* comp;//连通部件
+	CvSeq* comp = 0;//连通部件
 	CvSeq* curr_comp;//连通部件
 	CvMemStorage* storage;//动态内存
 	CvMemStorage* storage1;//动态内存
@@ -45,7 +45,6 @@ int testTracking(int argc, char** argv)
 	//初始化动态内存与连通部件
 	storage = cvCreateMemStorage(0);
 	storage1 = cvCreateMemStorage(0);
-	comp = cvCreateSeq(0, sizeof(CvSeq), sizeof(CvConnectedComp), storage);
 	curr_comp = cvCreateSeq(0, sizeof(CvSeq), sizeof(CvConnectedComp), storage1);
 
 	//循环捕捉,直到用户按键跳出循环体
