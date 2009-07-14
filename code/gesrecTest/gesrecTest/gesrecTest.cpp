@@ -73,7 +73,7 @@ int testImgDetectHandRange(int argc, char** argv)
 
 		//生成输出图片
 		outImg = cvCloneImage(pImg);
-		gesDetectHandRange(pImg, outImg, storage, comp, &s, 1);
+		gesDetectHandRange(pImg, outImg, comp, &s, 1);
 		//gesDetectHandRange(pImg, outImg);
 
 		cvNamedWindow("Output", 1);
@@ -98,13 +98,12 @@ int testCamDetectHandRange(int argc, char** argv)
 	CvCapture* capture = 0;
 	IplImage* input = 0;
 	IplImage* output = 0;
-	IplImage* gray;
 	IplImage* sampleImg;//样本图片
 	IplImage* conImg;//轮廓图片
 	CvScalar s;
 	CvSeq* comp;//连通部件
 	CvMemStorage* storage;//动态内存
-	CvSeq* contour;//轮廓信息
+	CvSeq* contour = 0;//轮廓信息
 	CvMemStorage* conSto;//轮廓内存
 
 	if(argc == 2)
@@ -144,7 +143,6 @@ int testCamDetectHandRange(int argc, char** argv)
 	{
 		return 0;
 	}
-	gray = cvCreateImage(cvGetSize(input), IPL_DEPTH_8U, 1);
 	conImg = cvCreateImage(cvGetSize(input), IPL_DEPTH_8U, 3);
 
 	//循环捕捉,直到用户按键跳出循环体
@@ -160,26 +158,14 @@ int testCamDetectHandRange(int argc, char** argv)
 		output = cvCloneImage(input);
 		if(argc == 1)
 		{
-			gesDetectHandRange(input, output, storage, comp);
+			gesDetectHandRange(input, output, comp);
 		}
 		else
 		{
-			gesDetectHandRange(input, output, storage, comp, &s, 1);
+			gesDetectHandRange(input, output, comp, &s, 1);
 		}
 
-		//把轮廓画出来
-		cvZero(gray);
-		cvCvtColor(output, gray, CV_BGR2GRAY);
-		//cvThreshold(output, gray, 1, 255, CV_THRESH_BINARY);
-		
-		cvFindContours(gray, conSto, &contour, sizeof(CvContour), CV_RETR_CCOMP, CV_CHAIN_APPROX_SIMPLE);
-		cvZero(conImg);
-	
-		for(;contour != 0;contour = contour->h_next)
-		{
-			CvScalar color = CV_RGB(rand()&255, rand()&255, rand()&255);
-			cvDrawContours(conImg, contour, color, color, -1, 1, 8);
-		}
+		gesFindContours(output, conImg, conSto, contour);
 
 		cvShowImage("Input", input);
 		cvShowImage("Output", output);
@@ -193,94 +179,13 @@ int testCamDetectHandRange(int argc, char** argv)
 	cvReleaseCapture(&capture);
 	cvReleaseMemStorage(&storage);
 	cvReleaseMemStorage(&conSto);
+	cvReleaseImage(&output);
 	cvReleaseImage(&conImg);
-	cvReleaseImage(&gray);
 	cvDestroyWindow("Input");
 	cvDestroyWindow("Output");
 	cvDestroyWindow("Contour");
 
 	return 1;
-}
-
-int testImgFindContours(int argc, char** argv)
-{
-	IplImage* pImg = 0;//要检测的图片
-	IplImage* outImg;//输出的结果图片
-	
-	//载入图像
-	if( argc == 2 && 
-		(pImg = cvLoadImage( argv[1], 1)) != 0)
-	{
-		cvNamedWindow( "Image", 1 );//创建窗口
-		cvShowImage( "Image", pImg );//显示图像
-
-		outImg = cvCreateImage(cvGetSize(pImg), IPL_DEPTH_8U, 1);
-		gesFindContours(pImg, outImg);
-
-		cvNamedWindow("Output", 1);
-		cvShowImage("Output", outImg);
-
-		cvWaitKey(0); //等待按键
-
-		cvDestroyWindow("Output");
-		cvReleaseImage(&outImg);
-		cvDestroyWindow( "Image" );//销毁窗口
-		cvReleaseImage( &pImg ); //释放图像
-		return 0;
-	}
-
-	return 0;
-}
-
-int testCamFindContours()
-{
-	CvCapture* capture = 0;
-	IplImage* output = 0;
-	IplImage* input = 0;
-	
-	capture = cvCaptureFromCAM(0);
-	if(!capture)
-	{
-		fprintf(stderr, "Could not initialize capturing...\n");
-		return -1;
-	}
-	cvNamedWindow("Input", 1);
-	cvNamedWindow("Output", 1);
-
-	//捕捉第一帧以初始化输出
-	input = cvQueryFrame(capture);
-	if(!input)
-	{
-		return 0;
-	}
-	output = cvCreateImage(cvGetSize(input), IPL_DEPTH_8U, 1);
-	
-	//循环捕捉,直到用户按键跳出循环体
-	for( ; ; )
-	{
-		input = cvQueryFrame(capture);
-		if(!input)
-		{
-			break;
-		}
-
-		cvZero(output);
-		gesFindContours(input, output);
-
-		cvShowImage("Input", input);
-		cvShowImage("Output", output);
-		if(cvWaitKey(10) >= 0)
-		{
-			break;
-		}
-	}
-
-	cvReleaseCapture(&capture);
-	cvDestroyWindow("Input");
-	cvDestroyWindow("Output");
-	cvReleaseImage(&output);
-	
-	return 0;
 }
 
 int getImgFromCAM(int argc, char** argv)

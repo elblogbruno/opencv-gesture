@@ -126,7 +126,7 @@ void gesSampleSkinRange(IplImage* src, CvScalar* s)
 }
 
 //dst为单通道的图像
-void gesDetectHandRange(IplImage* src, IplImage* dst, CvMemStorage* storage, CvSeq* comp, CvScalar* s, int flag)
+void gesDetectHandRange(IplImage* src, IplImage* dst, CvSeq* comp, CvScalar* s, int flag)
 {
 	IplImage* srcYCrCb;
 	CvScalar tempS;
@@ -175,7 +175,7 @@ void gesDetectHandRange(IplImage* src, IplImage* dst, CvMemStorage* storage, CvS
 		}
 	}
 
-	gesMultiFloodFill(dst, storage, comp);
+	gesMultiFloodFill(dst, comp);
 
 	//对结果图像进行开操作，去除杂质
 	//kernel = cvCreateStructuringElementEx(7, 7, 3, 3, CV_SHAPE_RECT);
@@ -260,12 +260,12 @@ static int gesRectCompFunc(const void* _a, const void* _b, void* userdata)
 	return retval;
 }
 
-void gesMultiFloodFill(IplImage* src, CvMemStorage* storage, CvSeq* comp)
+void gesMultiFloodFill(IplImage* src, CvSeq* comp)
 {
 	IplImage* mask;//运算掩码
 	CvScalar tempS1, tempS2;
 	CvConnectedComp tempComp;
-	CvConnectedComp* cur_comp;
+	//CvConnectedComp* cur_comp;
 	int i, j;
 	int l_comp;
 
@@ -300,14 +300,14 @@ void gesMultiFloodFill(IplImage* src, CvMemStorage* storage, CvSeq* comp)
 	i = 0;
 	l_comp = comp->total;
 	cvSeqSort(comp, gesRectCompFunc, 0);//对连通区域按面积排序
-	while(i < min(l_comp, 4))
+	/*while(i < min(l_comp, 4))
 	{
 		cur_comp = (CvConnectedComp* )cvGetSeqElem(comp, i);
 		cvRectangle(src, cvPoint(cur_comp->rect.x, cur_comp->rect.y),
 					cvPoint(cur_comp->rect.x + cur_comp->rect.width, cur_comp->rect.y + cur_comp->rect.height), 
 					cvScalar(255, 0, 0), 1);
 		i++;
-	}
+	}*/
 
 	//释放内存
 	cvReleaseImage(&mask);
