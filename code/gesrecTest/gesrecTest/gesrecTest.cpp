@@ -96,11 +96,16 @@ int testImgDetectHandRange(int argc, char** argv)
 int testCamDetectHandRange(int argc, char** argv)
 {
 	CvCapture* capture = 0;
+	IplImage* input = 0;
 	IplImage* output = 0;
+	IplImage* gray;
 	IplImage* sampleImg;//样本图片
+	IplImage* conImg;//轮廓图片
 	CvScalar s;
 	CvSeq* comp;//连通部件
 	CvMemStorage* storage;//动态内存
+	CvSeq* contour;//轮廓信息
+	CvMemStorage* conSto;//轮廓内存
 
 	if(argc == 2)
 	{
@@ -126,16 +131,25 @@ int testCamDetectHandRange(int argc, char** argv)
 
 	cvNamedWindow("Input", 1);
 	cvNamedWindow("Output", 1);
+	cvNamedWindow("Contour", 1);
 		
 	//初始化动态内存与连通部件
 	storage = cvCreateMemStorage(0);
 	comp = cvCreateSeq(0, sizeof(CvSeq), sizeof(CvConnectedComp), storage);
+	conSto = cvCreateMemStorage(0);
+
+	//获得第一帧
+	input = cvQueryFrame(capture);
+	if(!input)
+	{
+		return 0;
+	}
+	gray = cvCreateImage(cvGetSize(input), IPL_DEPTH_8U, 1);
+	conImg = cvCreateImage(cvGetSize(input), IPL_DEPTH_8U, 3);
 
 	//循环捕捉,直到用户按键跳出循环体
 	for( ; ; )
 	{
-		IplImage* input = 0;
-
 		input = cvQueryFrame(capture);
 		if(!input)
 		{
@@ -153,8 +167,23 @@ int testCamDetectHandRange(int argc, char** argv)
 			gesDetectHandRange(input, output, storage, comp, &s, 1);
 		}
 
+		//把轮廓画出来
+		cvZero(gray);
+		cvCvtColor(output, gray, CV_BGR2GRAY);
+		//cvThreshold(output, gray, 1, 255, CV_THRESH_BINARY);
+		
+		cvFindContours(gray, conSto, &contour, sizeof(CvContour), CV_RETR_CCOMP, CV_CHAIN_APPROX_SIMPLE);
+		cvZero(conImg);
+	
+		for(;contour != 0;contour = contour->h_next)
+		{
+			CvScalar color = CV_RGB(rand()&255, rand()&255, rand()&255);
+			cvDrawContours(conImg, contour, color, color, -1, 1, 8);
+		}
+
 		cvShowImage("Input", input);
 		cvShowImage("Output", output);
+		cvShowImage("Contour", conImg);
 		if(cvWaitKey(10) >= 0)
 		{
 			break;
@@ -163,8 +192,12 @@ int testCamDetectHandRange(int argc, char** argv)
 
 	cvReleaseCapture(&capture);
 	cvReleaseMemStorage(&storage);
+	cvReleaseMemStorage(&conSto);
+	cvReleaseImage(&conImg);
+	cvReleaseImage(&gray);
 	cvDestroyWindow("Input");
 	cvDestroyWindow("Output");
+	cvDestroyWindow("Contour");
 
 	return 1;
 }
