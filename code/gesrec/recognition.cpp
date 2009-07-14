@@ -1,5 +1,6 @@
 #include "gesrec.h"
 
+//src:灰度图像 dst:
 void gesFindContours(IplImage* src, IplImage* dst)
 {
 	CvMemStorage* storage;//动态存储单元
