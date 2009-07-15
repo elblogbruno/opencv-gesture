@@ -379,4 +379,6 @@ void gesTracking(IplImage* src, IplImage* dst, CvSeq* seq, CvSeq* seq_out, CvSca
 					cvScalar(255, 0, 0), 1);
 		i++;
 	}
+
+	cvReleaseImage(&srcYCrCb);
 }
