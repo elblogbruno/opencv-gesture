@@ -3,6 +3,12 @@
 #include "gesrec.h"
 #include <stdio.h>
 
+//src: source image data of the function, input
+//dst: result image data of the function, output
+//seq: sequence of areas to track of last frame, input
+//seq_out: sequence of areas to track of current frame, output
+//s: sample skin color range of current capture, input
+//flag: sign to decide whether to use default sample skin color range
 void gesTracking(IplImage* src, IplImage* dst, CvSeq* seq, CvSeq* seq_out, CvScalar* s, int flag) {
 	
 	int i = 0;
@@ -30,6 +36,7 @@ void gesTracking(IplImage* src, IplImage* dst, CvSeq* seq, CvSeq* seq_out, CvSca
 
 	cvSmooth(src, src, CV_GAUSSIAN);
 	srcYCrCb = cvCreateImage(cvGetSize(src), IPL_DEPTH_8U, 3);
+	//转化至YCrCb颜色空间
 	cvCvtColor(src, srcYCrCb, CV_BGR2YCrCb);
 
 	CvRect rect;
@@ -37,6 +44,7 @@ void gesTracking(IplImage* src, IplImage* dst, CvSeq* seq, CvSeq* seq_out, CvSca
 	int sign = 0;
 	cvClearSeq(seq_out);
 
+	//遍历跟踪最大的4个区域
 	while( i < min(seq_num, 4) ) {
 		sign = 0;
 		aComp = (CvConnectedComp* )cvGetSeqElem(seq, i);
@@ -45,7 +53,7 @@ void gesTracking(IplImage* src, IplImage* dst, CvSeq* seq, CvSeq* seq_out, CvSca
 		int tempx = 0;
 		int tempy = 0;
 
-		// x 最左列
+		// 判断区域的最左边是向外膨胀还是向内收缩
 		tempx = rect.x - 1;
 		tempNum = 0;
 		for(int k = rect.y; k < min(srcYCrCb->height, rect.y + rect.height); k++) {
@@ -70,6 +78,7 @@ void gesTracking(IplImage* src, IplImage* dst, CvSeq* seq, CvSeq* seq_out, CvSca
 			sign = -1;
 		}
 		
+		// 区域的最左边向外膨胀
 		while(rect.x > 0 && sign == 1) {
 			tempx = rect.x - 1;
 			tempNum = 0;
@@ -79,6 +88,7 @@ void gesTracking(IplImage* src, IplImage* dst, CvSeq* seq, CvSeq* seq_out, CvSca
 				if(tempS.val[1] >= range1 && tempS.val[1] <= range2 && 
 					tempS.val[2] >= range3 && tempS.val[2] <= range4) {
 					tempNum++;
+					// 是否存在连续的NUMS个符合条件的像素点
 					if(tempNum >= NUMS) {
 						rect.x -= 1;
 						rect.width += 1;
@@ -93,6 +103,7 @@ void gesTracking(IplImage* src, IplImage* dst, CvSeq* seq, CvSeq* seq_out, CvSca
 			}
 		}
 		
+		// 区域的最左边向内收缩
 		while( ( rect.x < srcYCrCb->width-1 ) && rect.width > 0 && sign == -1) {
 			tempx = rect.x + 1;
 			tempNum = 0;
@@ -118,7 +129,7 @@ void gesTracking(IplImage* src, IplImage* dst, CvSeq* seq, CvSeq* seq_out, CvSca
 			}
 		}
 
-		// x 最右列
+		// 判断区域的最右边是向外膨胀还是向内收缩
 		tempx = min( rect.x + rect.width + 1, srcYCrCb->width-1 );
 		tempNum = 0;
 		for(int k = rect.y; k < min(srcYCrCb->height, rect.y + rect.height); k++) {
@@ -142,6 +153,7 @@ void gesTracking(IplImage* src, IplImage* dst, CvSeq* seq, CvSeq* seq_out, CvSca
 			sign = -1;
 		}
 		
+		// 区域的最右边向外膨胀
 		while( (rect.x + rect.width) < (srcYCrCb->width-1) && sign == 1) {
 			tempx = min( rect.x + rect.width + 1, srcYCrCb->width-1 );
 			tempNum = 0;
@@ -166,6 +178,7 @@ void gesTracking(IplImage* src, IplImage* dst, CvSeq* seq, CvSeq* seq_out, CvSca
 			}
 		}
 		
+		// 区域的最右边向内收缩
 		while( rect.width > 0 && sign == -1) {
 			tempx = max( rect.x + rect.width - 1, 0 );
 			tempNum = 0;
@@ -191,8 +204,7 @@ void gesTracking(IplImage* src, IplImage* dst, CvSeq* seq, CvSeq* seq_out, CvSca
 			}
 		}
 
-
-		// y 最左列
+		// 判断区域的最上方是向外膨胀还是向内收缩
 		tempy = rect.y - 1;
 		tempNum = 0;
 		for(int k = rect.x; k < min(srcYCrCb->width, rect.x + rect.width); k++) {
@@ -217,6 +229,7 @@ void gesTracking(IplImage* src, IplImage* dst, CvSeq* seq, CvSeq* seq_out, CvSca
 			sign = -1;
 		}
 		
+		// 区域的最上方向外膨胀
 		while(rect.y > 0 && sign == 1) {
 			tempy = rect.y - 1;
 			tempNum = 0;
@@ -242,6 +255,7 @@ void gesTracking(IplImage* src, IplImage* dst, CvSeq* seq, CvSeq* seq_out, CvSca
 			}
 		}
 		
+		// 区域的最上方向内收缩
 		while( ( rect.y < srcYCrCb->height-1 ) && rect.height > 0 && sign == -1) {
 			tempy = rect.y + 1;
 			tempNum = 0;
@@ -268,7 +282,7 @@ void gesTracking(IplImage* src, IplImage* dst, CvSeq* seq, CvSeq* seq_out, CvSca
 			}
 		}
 
-		// y 最右列
+		// 判断区域的最下方是向外膨胀还是向内收缩
 		tempy = min( rect.y + rect.height + 1, srcYCrCb->height-1 );
 		tempNum = 0;
 		for(int k = rect.x; k < min(srcYCrCb->width, rect.x + rect.width); k++) {
@@ -291,7 +305,8 @@ void gesTracking(IplImage* src, IplImage* dst, CvSeq* seq, CvSeq* seq_out, CvSca
 		if(tempNum < NUMS) {
 			sign = -1;
 		}
-		
+
+		// 区域的最下方向外膨胀
 		while( (rect.y + rect.height) < (srcYCrCb->height-1) && sign == 1) {
 			tempy = min( rect.y + rect.height + 1, srcYCrCb->height-1 );
 			tempNum = 0;
@@ -316,6 +331,7 @@ void gesTracking(IplImage* src, IplImage* dst, CvSeq* seq, CvSeq* seq_out, CvSca
 			}
 		}
 		
+		// 区域的最下方向内收缩
 		while( rect.height > 0 && sign == -1) {
 			tempy = max( rect.y + rect.height - 1, 0 );
 			tempNum = 0;
