@@ -178,7 +178,7 @@ void gesDetectHandRange(IplImage* src, IplImage* dst, CvSeq* comp, CvScalar* s, 
 	gesMultiFloodFill(dst, comp);
 
 	//对结果图像进行开操作，去除杂质
-	//kernel = cvCreateStructuringElementEx(7, 7, 3, 3, CV_SHAPE_RECT);
+	//kernel = cvCreateStructuringElementEx(3, 3, 1, 1, CV_SHAPE_RECT);
 	//cvMorphologyEx(dst, dst, NULL, kernel, CV_MOP_OPEN);
 
 	//释放内存
