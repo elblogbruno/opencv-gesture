@@ -176,6 +176,7 @@ int testCamDetectHandRange(int argc, char** argv)
 	storage = cvCreateMemStorage(0);
 	comp = cvCreateSeq(0, sizeof(CvSeq), sizeof(CvConnectedComp), storage);
 	conSto = cvCreateMemStorage(0);
+	contour = cvCreateSeq(0, sizeof(CvSeq), sizeof(CvSeq), conSto);
 
 	//获得第一帧
 	input = cvQueryFrame(capture);
@@ -206,7 +207,7 @@ int testCamDetectHandRange(int argc, char** argv)
 		}
 
 		gesFindContours(output, conImg, conSto, contour);
-
+		
 		cvShowImage("Input", input);
 		cvShowImage("Output", output);
 		cvShowImage("Contour", conImg);
