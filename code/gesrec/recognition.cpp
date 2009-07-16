@@ -31,7 +31,7 @@ static int gesContourCompFunc(const void* _a, const void* _b, void* userdata)
 }
 
 //src:BGR dst:
-void gesFindContours(IplImage* src, IplImage* dst, CvMemStorage* storage, CvSeq* contour)
+void gesFindContours(IplImage* src, IplImage* dst, CvMemStorage* storage, CvSeq* contour, CvSeq* templateContour, CvMemStorage* templateStorage, int* flag, int ismatching)
 {
 	int count;//轮廓数
 	IplImage* gray;
@@ -72,9 +72,25 @@ void gesFindContours(IplImage* src, IplImage* dst, CvMemStorage* storage, CvSeq*
 
 	//在dst中画出轮廓
 	cvZero(dst);
+	printf("-----------------------------------------------华丽分割线");
 	for(int i = 0;i < min(contour->total, 4);i++)///////////////////////次数待改
 	{
 		cur_cont = (CvSeq* )cvGetSeqElem(contour, i);
+		if(*flag != 0)
+		{
+			*flag = 0;
+			templateContour = cvCloneSeq(cur_cont, templateStorage);
+			printf("abc %d\n", templateContour->total);
+		}
+		if(ismatching)
+		{
+			printf("abc11111111 %d\n", templateContour->total);
+			if( !templateContour ) {
+				printf("templateContour is null\n");
+			}
+			double result = cvMatchShapes((CvContour* )cur_cont, (CvContour* )templateContour, CV_CONTOURS_MATCH_I1);
+			printf("%.2f\n", result);
+		}
 		CvScalar s = cvScalarAll(0);//////////////////////////////
 		for(int j = 0;j < cur_cont->total;j++)/////////////
 		{
@@ -84,7 +100,7 @@ void gesFindContours(IplImage* src, IplImage* dst, CvMemStorage* storage, CvSeq*
 		}
 		s.val[0] /= cur_cont->total;
 		s.val[1] /= cur_cont->total;
-		printf("x:%.2f y:%.2f\n", s.val[0], s.val[1]);//////////////////////
+		//printf("x:%.2f y:%.2f\n", s.val[0], s.val[1]);//////////////////////
 		CvScalar color = CV_RGB(rand()&255, rand()&255, rand()&255);
 		cvDrawContours(dst, (CvSeq* )cur_cont, color, color, -1, 1, 8);
 	}
