@@ -104,7 +104,7 @@ void gesTracking(IplImage* src, IplImage* dst, CvSeq* seq, CvSeq* seq_out, CvSca
 		}
 		
 		// 区域的最左边向内收缩
-		while( ( rect.x < srcYCrCb->width-1 ) && rect.width > 0 && sign == -1) {
+		while( ( rect.x < srcYCrCb->width-NUMS-1 ) && rect.width > NUMS && sign == -1) {
 			tempx = rect.x + 1;
 			tempNum = 0;
 			for(int k = rect.y; k < min(srcYCrCb->height, rect.y + rect.height); k++) {
@@ -133,9 +133,7 @@ void gesTracking(IplImage* src, IplImage* dst, CvSeq* seq, CvSeq* seq_out, CvSca
 		tempx = min( rect.x + rect.width + 1, srcYCrCb->width-1 );
 		tempNum = 0;
 		for(int k = rect.y; k < min(srcYCrCb->height, rect.y + rect.height); k++) {
-			if( tempx >= srcYCrCb->width-1) {
-				break;
-			}
+			
 			tempS = cvGet2D(srcYCrCb, k, tempx);
 			if(tempS.val[1] >= range1 && tempS.val[1] <= range2 && 
 				tempS.val[2] >= range3 && tempS.val[2] <= range4) {
@@ -158,9 +156,7 @@ void gesTracking(IplImage* src, IplImage* dst, CvSeq* seq, CvSeq* seq_out, CvSca
 			tempx = min( rect.x + rect.width + 1, srcYCrCb->width-1 );
 			tempNum = 0;
 			for(int k = rect.y; k < min(srcYCrCb->height, rect.y + rect.height); k++) {
-				if( tempx >= srcYCrCb->width-1) {
-					break;
-				}
+				
 				tempS = cvGet2D(srcYCrCb, k, tempx);
 				if(tempS.val[1] >= range1 && tempS.val[1] <= range2 && 
 					tempS.val[2] >= range3 && tempS.val[2] <= range4) {
@@ -179,8 +175,8 @@ void gesTracking(IplImage* src, IplImage* dst, CvSeq* seq, CvSeq* seq_out, CvSca
 		}
 		
 		// 区域的最右边向内收缩
-		while( rect.width > 0 && sign == -1) {
-			tempx = max( rect.x + rect.width - 1, 0 );
+		while( rect.width > NUMS && sign == -1) {
+			tempx = max( rect.x + rect.width - 1, NUMS );
 			tempNum = 0;
 			for(int k = rect.y; k < min(srcYCrCb->height, rect.y + rect.height); k++) {
 				if(tempx <= rect.x) {
@@ -256,7 +252,7 @@ void gesTracking(IplImage* src, IplImage* dst, CvSeq* seq, CvSeq* seq_out, CvSca
 		}
 		
 		// 区域的最上方向内收缩
-		while( ( rect.y < srcYCrCb->height-1 ) && rect.height > 0 && sign == -1) {
+		while( ( rect.y < srcYCrCb->height-NUMS-1 ) && rect.height > NUMS && sign == -1) {
 			tempy = rect.y + 1;
 			tempNum = 0;
 			for(int k = rect.x; k < min(srcYCrCb->width, rect.x + rect.width); k++) {
@@ -332,7 +328,7 @@ void gesTracking(IplImage* src, IplImage* dst, CvSeq* seq, CvSeq* seq_out, CvSca
 		}
 		
 		// 区域的最下方向内收缩
-		while( rect.height > 0 && sign == -1) {
+		while( rect.height > NUMS && sign == -1) {
 			tempy = max( rect.y + rect.height - 1, 0 );
 			tempNum = 0;
 			for(int k = rect.x; k < min(srcYCrCb->width, rect.x + rect.width); k++) {
