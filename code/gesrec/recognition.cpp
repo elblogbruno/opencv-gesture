@@ -1,4 +1,5 @@
 #include "gesrec.h"
+#include <stdio.h>//////////////////////////////////////////
 
 //轮廓面积比较函数
 static int gesContourCompFunc(const void* _a, const void* _b, void* userdata)
@@ -37,6 +38,7 @@ void gesFindContours(IplImage* src, IplImage* dst, CvMemStorage* storage, CvSeq*
 	CvMemStorage* first_sto;
 	CvSeq* first_cont;
 	CvSeq* cur_cont;
+	CvPoint* p;///////////////////////////////////////
 
 	first_sto = cvCreateMemStorage(0);
 	first_cont = cvCreateSeq(CV_SEQ_ELTYPE_POINT, sizeof(CvSeq), sizeof(CvPoint), first_sto);
@@ -73,9 +75,20 @@ void gesFindContours(IplImage* src, IplImage* dst, CvMemStorage* storage, CvSeq*
 	for(int i = 0;i < min(contour->total, 4);i++)///////////////////////次数待改
 	{
 		cur_cont = (CvSeq* )cvGetSeqElem(contour, i);
+		CvScalar s = cvScalarAll(0);//////////////////////////////
+		for(int j = 0;j < cur_cont->total;j++)/////////////
+		{
+			p = (CvPoint* )cvGetSeqElem(cur_cont, j);/////////////////
+			s.val[0] += p->x;//////////////////////////
+			s.val[1] += p->y;//////////////////////
+		}
+		s.val[0] /= cur_cont->total;
+		s.val[1] /= cur_cont->total;
+		printf("x:%.2f y:%.2f\n", s.val[0], s.val[1]);//////////////////////
 		CvScalar color = CV_RGB(rand()&255, rand()&255, rand()&255);
-		cvDrawContours(dst, cur_cont, color, color, -1, 1, 8);
+		cvDrawContours(dst, (CvSeq* )cur_cont, color, color, -1, 1, 8);
 	}
+	printf("\n");//////////////////////////////////
 
 	//判断原点位置以确定是否需要反转图像
 	if(src->origin == 1)
