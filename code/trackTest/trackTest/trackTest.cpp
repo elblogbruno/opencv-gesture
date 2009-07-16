@@ -1,6 +1,8 @@
 // gesrecTest.cpp : 定义控制台应用程序的入口点。
 //
 
+#define TIMES 10
+
 #include "cv.h"
 #include "highgui.h"
 #include "gesrec.h"
@@ -51,61 +53,60 @@ int testTracking(int argc, char** argv)
 	//循环捕捉,直到用户按键跳出循环体
 
 	IplImage* input = 0;
-
-	input = cvQueryFrame(capture);
-	if(!input)
-	{
-		return -1;
-	}
-
-	cvReleaseImage(&output);
-	output = cvCloneImage(input);
-	if(argc == 1)
-	{
-		gesDetectHandRange(input, output, comp);
-	}
-	else
-	{
-		gesDetectHandRange(input, output, comp, &s, 1);
-	}
-
-	cvShowImage("Input", input);
-	cvShowImage("Output", output);
-
+	// 每TIMES帧进行一次重新的检测
 	while(true) {
-
 		input = cvQueryFrame(capture);
-
 		if(!input)
 		{
-			break;
+			continue;
 		}
 
 		cvReleaseImage(&output);
 		output = cvCloneImage(input);
-
-		if(comp->total == 0) {
-			break;
+		if(argc == 1)
+		{
+			gesDetectHandRange(input, output, comp);
 		}
-
-		if(argc == 1) {
-			gesTracking(input, output, comp, curr_comp, &s);
-		} else {
-			gesTracking(input, output, comp, curr_comp, &s, 1);
+		else
+		{
+			gesDetectHandRange(input, output, comp, &s, 1);
 		}
-		printf("hell\n\n");
-		cvClearSeq(comp);
-		comp = cvCloneSeq(curr_comp);
 
 		cvShowImage("Input", input);
 		cvShowImage("Output", output);
 
-		if(cvWaitKey(10) >= 0)
-		{
+		for(int i = 0; i < TIMES; i++) {
+
+			input = cvQueryFrame(capture);
+
+			if(!input)
+			{
+				break;
+			}
+
+			cvReleaseImage(&output);
+			output = cvCloneImage(input);
+
+			if(comp->total == 0) {
+				break;
+			}
+
+			if(argc == 1) {
+				gesTracking(input, output, comp, curr_comp, &s);
+			} else {
+				gesTracking(input, output, comp, curr_comp, &s, 1);
+			}
+			printf("hell\n\n");
+			cvClearSeq(comp);
+			comp = cvCloneSeq(curr_comp);
+
+			cvShowImage("Input", input);
+			cvShowImage("Output", output);
+		}
+		if(cvWaitKey(10) >= 0) {
 			break;
 		}
 	}
-
 	cvReleaseCapture(&capture);
 	cvReleaseMemStorage(&storage);
 	cvReleaseMemStorage(&storage1);
