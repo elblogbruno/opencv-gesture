@@ -13,7 +13,7 @@ static int gesRectCompFunc(const void* _a, const void* _b, void* userdata);
 void gesMultiFloodFill(IplImage* src, CvSeq* comp);
 
 extern "C" __declspec(dllexport) void gesFindContours(IplImage* src, IplImage* dst, CvSeq** templateContour = NULL, CvMemStorage* templateStorage = NULL, int flag = 0);
-extern "C" __declspec(dllexport) void gesMatchContoursTemplate(IplImage* src, IplImage* dst, CvSeq* contour, CvSeq* templateContour);
+extern "C" __declspec(dllexport) void gesMatchContoursTemplate(IplImage* src, IplImage* dst, CvSeq** templateContour);
 static int gesContourCompFunc(const void* _a, const void* _b, void* userdata);
 
 extern "C" __declspec(dllexport) void gesTracking(IplImage* src, IplImage* dst, CvSeq* seq, CvSeq* seq_out, CvScalar* s, int flag = 0);

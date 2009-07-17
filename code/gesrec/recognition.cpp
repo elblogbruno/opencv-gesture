@@ -73,7 +73,7 @@ void gesFindContours(IplImage* src, IplImage* dst, CvSeq** templateContour, CvMe
 
 	//在dst中画出轮廓
 	cvZero(dst);
-	for(int i = 0;i < min(all_cont->total, 4);i++)///////////////////////次数待改
+	for(int i = 0;i < min(all_cont->total, 3);i++)///////////////////////次数待改
 	{
 		cur_cont = (CvSeq* )cvGetSeqElem(all_cont, i);
 		if(flag != 0 && i == 0)
@@ -107,11 +107,23 @@ void gesFindContours(IplImage* src, IplImage* dst, CvSeq** templateContour, CvMe
 	cvReleaseImage(&gray);
 }
 
-void gesMatchContoursTemplate(IplImage* src, IplImage* dst, CvSeq* contour, CvSeq* templateContour)
+void gesMatchContoursTemplate(IplImage* src, IplImage* dst, CvSeq** templateContour)
 {
-	/*if(ismatching)
+	CvSeq* contour;
+	CvMemStorage* storage;
+
+	//初始化动态内存
+	storage = cvCreateMemStorage(0);
+	contour = cvCreateSeq(CV_SEQ_ELTYPE_POINT, sizeof(CvSeq), sizeof(CvPoint), storage);
+
+	//得到轮廓并进行匹配
+	gesFindContours(src, dst, &contour, storage, 1);
+	if(contour->total != 0)//如果得到的轮廓不为空
 	{
-		double result = cvMatchShapes((CvContour* )cur_cont, (CvContour* )(*templateContour), CV_CONTOURS_MATCH_I2);
-		printf("%.2f\n", result);
-	}*/	
+		double result = cvMatchShapes((CvContour* )contour, (CvContour* )(*templateContour), CV_CONTOURS_MATCH_I2);
+		printf("%.2f\n", result);	
+	}
+
+	//释放内存
+	cvReleaseMemStorage(&storage);
 }

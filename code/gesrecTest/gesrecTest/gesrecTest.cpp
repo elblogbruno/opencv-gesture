@@ -79,7 +79,7 @@ int testImgDetectHandRange(int argc, char** argv)
 	CvScalar s;//样本直方图
 	CvSeq* comp;//连通部件
 	CvMemStorage* storage;//动态内存
-	
+
 	//载入图像
 	if( argc >= 3 && 
 		(input = cvLoadImage( argv[2], 1)) != 0)
@@ -171,7 +171,7 @@ int testCamDetectHandRange(int argc, char** argv)
 	cvNamedWindow("Input", 1);
 	cvNamedWindow("Output", 1);
 	cvNamedWindow("Contour", 1);
-		
+
 	//初始化动态内存与连通部件
 	storage = cvCreateMemStorage(0);
 	comp = cvCreateSeq(0, sizeof(CvSeq), sizeof(CvConnectedComp), storage);
@@ -207,7 +207,7 @@ int testCamDetectHandRange(int argc, char** argv)
 		}
 
 		gesFindContours(output, conImg);
-		
+
 		cvShowImage("Input", input);
 		cvShowImage("Output", output);
 		cvShowImage("Contour", conImg);
@@ -244,7 +244,7 @@ int getImgFromCAM(int argc, char** argv)
 	}
 
 	cvNamedWindow("Input", 1);
-		
+
 	//循环捕捉,直到用户按键跳出循环体
 	for( ; ; )
 	{
@@ -269,11 +269,12 @@ int getImgFromCAM(int argc, char** argv)
 
 	cvReleaseCapture(&capture);
 	cvDestroyWindow("Input");
-	
+
 	return 1;
 }
 
 //模版匹配法的测试
+//cmd使用说明:gesrecTest.exe [index = 4] [filename:src] ([filename:sample])
 int testMatchTemplate(int argc, char** argv)
 {
 	CvCapture* capture = 0;
@@ -314,7 +315,7 @@ int testMatchTemplate(int argc, char** argv)
 	cvNamedWindow("Input", 1);
 	cvNamedWindow("Output", 1);
 	cvNamedWindow("Contour", 1);
-		
+
 	//初始化动态内存与连通部件
 	storage = cvCreateMemStorage(0);
 	comp = cvCreateSeq(0, sizeof(CvSeq), sizeof(CvConnectedComp), storage);
@@ -349,25 +350,31 @@ int testMatchTemplate(int argc, char** argv)
 			gesDetectHandRange(input, output, comp, &s, 1);
 		}
 
-		gesFindContours(output, conImg, &templateContour, templateSto, isTemp);
+		if(!matching)
+		{
+			gesFindContours(output, conImg, &templateContour, templateSto, isTemp);
+		}else
+		{
+			gesMatchContoursTemplate(output, conImg, &templateContour);
+		}
 		if(isTemp == 1)
 		{
 			isTemp = 0;
+			matching = 1;
 		}
-		
+
 		cvShowImage("Input", input);
 		cvShowImage("Output", output);
 		cvShowImage("Contour", conImg);
 		if(cvWaitKey(10) >= 20)
 		{
 			isTemp = 1;
-			matching = 1;
 		}
 		else 
-		if(cvWaitKey(10) >= 0)
-		{
-			break;
-		}
+			if(cvWaitKey(10) >= 0)
+			{
+				break;
+			}
 	}
 
 	cvReleaseCapture(&capture);
@@ -380,6 +387,68 @@ int testMatchTemplate(int argc, char** argv)
 	cvDestroyWindow("Contour");
 
 	return 1;
+}
+
+//网上找的色彩平衡的算法
+//cmd使用说明:gesrecTest.exe [index = 5] [filename]
+IplImage secaipingheng( IplImage* seping)
+{
+	IplImage* dst;//色彩平衡
+	IplImage* gray;//gray图
+	dst=cvCreateImage(cvSize(seping->width,seping->height),IPL_DEPTH_8U,3);
+	gray=cvCreateImage(cvSize(seping->width,seping->height),IPL_DEPTH_8U,1);
+	int height,width,step,channels;
+	uchar *data,*data1;
+	height = seping->height;
+	width = seping->width;
+	step = seping->widthStep;
+	channels = seping->nChannels;
+	data = (uchar *)seping->imageData;
+	data1 = (uchar *)dst->imageData;
+	int i,j;
+	double R,G,B,Gy,aR,aG,aB;
+	cvZero(dst);
+	CvMat* MR=cvCreateMat(height,width,CV_64FC1);
+	CvMat* MG=cvCreateMat(height,width,CV_64FC1);
+	CvMat* MB=cvCreateMat(height,width,CV_64FC1);
+	for(i=0;i<height;i++) for(j=0;j<width;j++)
+	{
+		R=data[i*step+j*channels+0];
+		G=data[i*step+j*channels+1];
+		B=data[i*step+j*channels+2];
+		Gy=((gray->imageData + gray->widthStep*i))[j];
+		cvmSet(MR,i,j,R);
+		cvmSet(MG,i,j,G);
+		cvmSet(MB,i,j,B);
+		((gray->imageData + gray->widthStep*i))[j]=(R+G+B)/3;
+	}
+	CvScalar argR,argG,argB;
+	double argI;
+	argR=cvAvg(MR,0);
+	argG=cvAvg(MG,0);
+	argB=cvAvg(MB,0);
+	argI=(argR.val[0]+argG.val[0]+argB.val[0])/3;
+	aR=argI/argR.val[0];
+	aG=argI/argG.val[0];
+	aB=argI/argB.val[0];
+	for(i=0;i<height;i++) for(j=0;j<width;j++)
+	{
+		R=CV_MAT_ELEM(*MR,double,i,j)*aR;
+		G=CV_MAT_ELEM(*MG,double,i,j)*aG;
+		B=CV_MAT_ELEM(*MB,double,i,j)*aB;
+		if(R>255)data1[i*step+j*channels+0]=255;
+		else data1[i*step+j*channels+0]=R;
+		if(G>255)data1[i*step+j*channels+1]=255;
+		else data1[i*step+j*channels+1]=G;
+		if(B>255)data1[i*step+j*channels+2]=255;
+		else data1[i*step+j*channels+2]=B;
+	}
+	cvNamedWindow("色彩平衡", CV_WINDOW_AUTOSIZE);
+	cvShowImage("色彩平衡", dst);
+	//cvWaitKey(0);
+	//cvDestroyWindow( "色彩平衡" );//销毁窗口
+	//cvReleaseImage( &dst ); //释放图像
+	return *dst;
 }
 
 int main( int argc, char** argv )
@@ -411,6 +480,29 @@ int main( int argc, char** argv )
 		else if(strcmp(argv[1], "4") == 0)
 		{
 			testMatchTemplate(argc, argv);
+		}
+		else if(strcmp(argv[1], "5") == 0)
+		{
+			IplImage* input;
+			IplImage* output;
+			
+			if((input = cvLoadImage(argv[2], 1)) == 0)
+			{
+				printf("Could not load image\n");
+				return 0;
+			}
+			output = cvCreateImage(cvGetSize(input), IPL_DEPTH_8U, 3);
+			*output = secaipingheng(input);
+
+			cvNamedWindow("input", 1);
+			cvShowImage("input", input);
+			
+			cvWaitKey(0);
+
+			cvDestroyWindow("input");
+			cvDestroyWindow("output");
+			cvReleaseImage(&input);
+			cvReleaseImage(&output);
 		}
 		else
 		{
