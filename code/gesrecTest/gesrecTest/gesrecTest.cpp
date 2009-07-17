@@ -206,7 +206,7 @@ int testCamDetectHandRange(int argc, char** argv)
 			gesDetectHandRange(input, output, comp, &s, 1);
 		}
 
-		gesFindContours(output, conImg, conSto, contour);
+		gesFindContours(output, conImg);
 		
 		cvShowImage("Input", input);
 		cvShowImage("Output", output);
@@ -284,8 +284,6 @@ int testMatchTemplate(int argc, char** argv)
 	CvScalar s;
 	CvSeq* comp;//连通部件
 	CvMemStorage* storage;//动态内存
-	CvSeq* contour = 0;//轮廓信息
-	CvMemStorage* conSto;//轮廓内存
 	CvMemStorage* templateSto;
 	CvSeq* templateContour;
 	int isTemp = 0;
@@ -320,8 +318,6 @@ int testMatchTemplate(int argc, char** argv)
 	//初始化动态内存与连通部件
 	storage = cvCreateMemStorage(0);
 	comp = cvCreateSeq(0, sizeof(CvSeq), sizeof(CvConnectedComp), storage);
-	conSto = cvCreateMemStorage(0);
-	contour = cvCreateSeq(0, sizeof(CvSeq), sizeof(CvSeq), conSto);
 	templateSto = cvCreateMemStorage(0);
 	templateContour = cvCreateSeq(CV_SEQ_ELTYPE_POINT, sizeof(CvSeq), sizeof(CvPoint), templateSto);
 
@@ -353,8 +349,12 @@ int testMatchTemplate(int argc, char** argv)
 			gesDetectHandRange(input, output, comp, &s, 1);
 		}
 
-		gesFindContours(output, conImg, conSto, contour, templateContour, templateSto, &isTemp, matching);
-
+		gesFindContours(output, conImg, &templateContour, templateSto, isTemp);
+		if(isTemp == 1)
+		{
+			isTemp = 0;
+		}
+		
 		cvShowImage("Input", input);
 		cvShowImage("Output", output);
 		cvShowImage("Contour", conImg);
@@ -372,7 +372,6 @@ int testMatchTemplate(int argc, char** argv)
 
 	cvReleaseCapture(&capture);
 	cvReleaseMemStorage(&storage);
-	cvReleaseMemStorage(&conSto);
 	cvReleaseMemStorage(&templateSto);
 	cvReleaseImage(&output);
 	cvReleaseImage(&conImg);
