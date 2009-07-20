@@ -14,6 +14,9 @@ int testSampleHistogram(int argc, char** argv);
 int testImgDetectHandRange(int argc, char** argv);
 int testCamDetectHandRange(int argc, char** argv);
 int getImgFromCAM(int argc, char** argv);
+IplImage secaipingheng( IplImage* seping);
+int testSecaipingheng(int argc, char** argv);
+int testMaxs(int argc, char** argv);
 
 //显示输入图像在HSV颜色空间的H分量的直方图
 void histogram(IplImage* src, IplImage* dst)
@@ -273,13 +276,14 @@ int getImgFromCAM(int argc, char** argv)
 	return 1;
 }
 
-//模版匹配法的测试
+//模版匹配法的测试,色彩平衡在目前的测试中没采用(因为看不出有什么效果)
 //cmd使用说明:gesrecTest.exe [index = 4] [filename:src] ([filename:sample])
 int testMatchTemplate(int argc, char** argv)
 {
 	CvCapture* capture = 0;
 	IplImage* input = 0;
 	IplImage* output = 0;
+	//IplImage* balance = 0;//色彩平衡后的图片
 	IplImage* sampleImg;//样本图片
 	IplImage* conImg;//轮廓图片
 	CvScalar s;
@@ -339,14 +343,24 @@ int testMatchTemplate(int argc, char** argv)
 			break;
 		}
 
+		//得到色彩平衡后的图片
+		//if(balance != 0)
+		//{
+		//	cvReleaseImage(&balance);
+		//}
+		//*balance = secaipingheng(input);
+
 		cvReleaseImage(&output);
+		//output = cvCloneImage(balance);
 		output = cvCloneImage(input);
 		if(argc == 2)
 		{
+			//gesDetectHandRange(balance, output, comp);
 			gesDetectHandRange(input, output, comp);
 		}
 		else
 		{
+			//gesDetectHandRange(balance, output, comp, &s, 1);
 			gesDetectHandRange(input, output, comp, &s, 1);
 		}
 
@@ -382,6 +396,7 @@ int testMatchTemplate(int argc, char** argv)
 	cvReleaseMemStorage(&templateSto);
 	cvReleaseImage(&output);
 	cvReleaseImage(&conImg);
+	//cvReleaseImage(&balance);
 	cvDestroyWindow("Input");
 	cvDestroyWindow("Output");
 	cvDestroyWindow("Contour");
@@ -390,7 +405,6 @@ int testMatchTemplate(int argc, char** argv)
 }
 
 //网上找的色彩平衡的算法
-//cmd使用说明:gesrecTest.exe [index = 5] [filename]
 IplImage secaipingheng( IplImage* seping)
 {
 	IplImage* dst;//色彩平衡
@@ -420,7 +434,7 @@ IplImage secaipingheng( IplImage* seping)
 		cvmSet(MR,i,j,R);
 		cvmSet(MG,i,j,G);
 		cvmSet(MB,i,j,B);
-		((gray->imageData + gray->widthStep*i))[j]=(R+G+B)/3;
+		((gray->imageData + gray->widthStep*i))[j]=(char)(R+G+B)/3;
 	}
 	CvScalar argR,argG,argB;
 	double argI;
@@ -437,11 +451,11 @@ IplImage secaipingheng( IplImage* seping)
 		G=CV_MAT_ELEM(*MG,double,i,j)*aG;
 		B=CV_MAT_ELEM(*MB,double,i,j)*aB;
 		if(R>255)data1[i*step+j*channels+0]=255;
-		else data1[i*step+j*channels+0]=R;
+		else data1[i*step+j*channels+0]=(char)R;
 		if(G>255)data1[i*step+j*channels+1]=255;
-		else data1[i*step+j*channels+1]=G;
+		else data1[i*step+j*channels+1]=(char)G;
 		if(B>255)data1[i*step+j*channels+2]=255;
-		else data1[i*step+j*channels+2]=B;
+		else data1[i*step+j*channels+2]=(char)B;
 	}
 	cvNamedWindow("色彩平衡", CV_WINDOW_AUTOSIZE);
 	cvShowImage("色彩平衡", dst);
@@ -449,6 +463,132 @@ IplImage secaipingheng( IplImage* seping)
 	//cvDestroyWindow( "色彩平衡" );//销毁窗口
 	//cvReleaseImage( &dst ); //释放图像
 	return *dst;
+}
+
+//色彩平衡算法的测试
+//cmd使用说明:gesrecTest.exe [index = 5] [filename]
+int testSecaipingheng(int argc, char** argv)
+{
+	IplImage* input;
+	IplImage* output;
+
+	if((input = cvLoadImage(argv[2], 1)) == 0)
+	{
+		printf("Could not load image\n");
+		return 0;
+	}
+	output = cvCreateImage(cvGetSize(input), IPL_DEPTH_8U, 3);
+	*output = secaipingheng(input);
+
+	cvNamedWindow("input", 1);
+	cvShowImage("input", input);
+
+	cvWaitKey(0);
+
+	cvDestroyWindow("input");
+	cvDestroyWindow("output");
+	cvReleaseImage(&input);
+	cvReleaseImage(&output);
+
+	return 1;
+}
+
+//极值法的测试
+//cmd使用说明:gesrecTest.exe [index = 6]
+int testMaxs(int argc, char** argv)
+{
+	CvCapture* capture = 0;
+	IplImage* input = 0;
+	IplImage* output = 0;
+	IplImage* sampleImg;//样本图片
+	IplImage* conImg;//轮廓图片
+	CvScalar s;
+	CvSeq* comp;//连通部件
+	CvMemStorage* storage;//动态内存
+	CvSeq* contour;
+	CvMemStorage* contSto;
+	
+	if(argc == 3)
+	{
+		if((sampleImg = cvLoadImage(argv[2], 1)) == 0)
+		{
+			fprintf(stderr, "Could not open sample image\n");
+			return 0;
+		}
+		else
+		{
+			//获得样本图片的肤色范围
+			gesSampleSkinRange(sampleImg, &s);
+			cvReleaseImage(&sampleImg);
+		}
+	}
+
+	capture = cvCaptureFromCAM(0);
+	if(!capture)
+	{
+		fprintf(stderr, "Could not initialize capturing...\n");
+		return -1;
+	}
+
+	cvNamedWindow("Input", 1);
+	cvNamedWindow("Output", 1);
+	cvNamedWindow("Contour", 1);
+
+	//初始化动态内存
+	storage = cvCreateMemStorage(0);
+	comp = cvCreateSeq(0, sizeof(CvSeq), sizeof(CvConnectedComp), storage);
+	contSto = cvCreateMemStorage(0);
+	contour = cvCreateSeq(CV_SEQ_ELTYPE_POINT, sizeof(CvSeq), sizeof(CvPoint), contSto);
+
+	//获得第一帧
+	input = cvQueryFrame(capture);
+	if(!input)
+	{
+		return 0;
+	}
+	conImg = cvCreateImage(cvGetSize(input), IPL_DEPTH_8U, 3);
+
+	//循环捕捉,直到用户按键跳出循环体
+	for( ; ; )
+	{
+		input = cvQueryFrame(capture);
+		if(!input)
+		{
+			break;
+		}
+
+		cvReleaseImage(&output);
+		output = cvCloneImage(input);
+		if(argc == 2)
+		{
+			gesDetectHandRange(input, output, comp);
+		}
+		else
+		{
+			gesDetectHandRange(input, output, comp, &s, 1);
+		}
+
+		gesFindContours(output, conImg, &contour, contSto, 1);
+		gesFindContourMaxs(contour);
+
+		cvShowImage("Input", input);
+		cvShowImage("Output", output);
+		cvShowImage("Contour", conImg);
+		if(cvWaitKey(10) >= 0)
+		{
+			break;
+		}
+	}
+
+	cvReleaseCapture(&capture);
+	cvReleaseMemStorage(&contSto);
+	cvReleaseImage(&output);
+	cvReleaseImage(&conImg);
+	cvDestroyWindow("Input");
+	cvDestroyWindow("Output");
+	cvDestroyWindow("Contour");
+
+	return 1;
 }
 
 int main( int argc, char** argv )
@@ -483,26 +623,11 @@ int main( int argc, char** argv )
 		}
 		else if(strcmp(argv[1], "5") == 0)
 		{
-			IplImage* input;
-			IplImage* output;
-			
-			if((input = cvLoadImage(argv[2], 1)) == 0)
-			{
-				printf("Could not load image\n");
-				return 0;
-			}
-			output = cvCreateImage(cvGetSize(input), IPL_DEPTH_8U, 3);
-			*output = secaipingheng(input);
-
-			cvNamedWindow("input", 1);
-			cvShowImage("input", input);
-			
-			cvWaitKey(0);
-
-			cvDestroyWindow("input");
-			cvDestroyWindow("output");
-			cvReleaseImage(&input);
-			cvReleaseImage(&output);
+			testSecaipingheng(argc, argv);
+		}
+		else if(strcmp(argv[1], "6") == 0)
+		{
+			testMaxs(argc, argv);
 		}
 		else
 		{
