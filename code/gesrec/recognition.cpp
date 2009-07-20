@@ -40,8 +40,7 @@ void gesFindContours(IplImage* src, IplImage* dst, CvSeq** templateContour, CvMe
 	CvSeq* first_cont;
 	CvSeq* all_cont;
 	CvSeq* cur_cont;
-	CvPoint* p;///////////////////////////////////////
-
+	
 	//初始化动态内存
 	first_sto = cvCreateMemStorage(0);
 	first_cont = cvCreateSeq(CV_SEQ_ELTYPE_POINT, sizeof(CvSeq), sizeof(CvPoint), first_sto);
@@ -81,16 +80,6 @@ void gesFindContours(IplImage* src, IplImage* dst, CvSeq** templateContour, CvMe
 			*templateContour = cvCloneSeq(cur_cont, templateStorage);
 		}
 		
-		CvScalar s = cvScalarAll(0);//////////////////////////////
-		for(int j = 0;j < cur_cont->total;j++)/////////////
-		{
-			p = (CvPoint* )cvGetSeqElem(cur_cont, j);/////////////////
-			s.val[0] += p->x;//////////////////////////
-			s.val[1] += p->y;//////////////////////
-		}
-		s.val[0] /= cur_cont->total;
-		s.val[1] /= cur_cont->total;
-		//printf("x:%.2f y:%.2f\n", s.val[0], s.val[1]);//////////////////////
 		CvScalar color = CV_RGB(rand()&255, rand()&255, rand()&255);
 		cvDrawContours(dst, (CvSeq* )cur_cont, color, color, -1, 1, 8);
 	}
@@ -120,10 +109,81 @@ void gesMatchContoursTemplate(IplImage* src, IplImage* dst, CvSeq** templateCont
 	gesFindContours(src, dst, &contour, storage, 1);
 	if(contour->total != 0)//如果得到的轮廓不为空
 	{
-		double result = cvMatchShapes((CvContour* )contour, (CvContour* )(*templateContour), CV_CONTOURS_MATCH_I2);
-		printf("%.2f\n", result);	
+		double result = cvMatchShapes((CvContour* )contour, (CvContour* )(*templateContour), CV_CONTOURS_MATCH_I3);
+		printf("%.2f\n", result);/////////////////////////////////////////////
 	}
 
 	//释放内存
 	cvReleaseMemStorage(&storage);
+}
+
+//找出轮廓最大的5个极大值点
+void gesFindContourMaxs(CvSeq* contour)
+{
+	int i;
+	CvScalar center;//重心位置
+	CvPoint* p;
+	CvMat max;//存储5个极大值的数组
+	double initMax[] = {-1, -1, -1, -1, -1};//初始极大值设置为-1
+	double minValue, maxValue;//5个极大值中的最大值与最小值
+	CvPoint minLoc;//最小值的位置
+	double preDistance = 0;
+	bool isCandidate = false;//是否是候选的极大值点
+
+	//初始化重心位置
+	center = cvScalarAll(0);
+
+	//初始化极大值矩阵
+	max = cvMat(1, 5, CV_64FC1, initMax);
+
+	//首先求出轮廓的重心
+	for(i = 0;i < contour->total;i++)
+	{
+		p = (CvPoint* )cvGetSeqElem(contour, i);
+		center.val[0] += p->x;
+		center.val[1] += p->y;
+	}
+	center.val[0] /= contour->total;
+	center.val[1] /= contour->total;
+
+	//遍历轮廓,找出所有的极大值点
+	for(i = 0;i < contour->total;i++)
+	{
+		p = (CvPoint* )cvGetSeqElem(contour, i);
+		double distance = sqrt(pow(center.val[0] - p->x, 2) + pow(center.val[1] - p->y, 2));
+
+		if(distance > preDistance)
+		{
+			isCandidate = true;
+		}
+		else if(distance < preDistance && isCandidate == true)
+		{
+			cvMinMaxLoc(&max, &minValue, &maxValue, &minLoc);
+
+			if(distance > minValue)
+			{
+				cvmSet(&max, minLoc.y, minLoc.x, distance);
+			}
+			isCandidate = false;
+		}
+		else
+		{
+			isCandidate = false;
+		}
+
+		preDistance = distance;
+	}
+
+	//打印5个极大值
+	printf("%.2f %.2f %.2f %.2f %.2f\n", cvmGet(&max, 0, 0), cvmGet(&max, 0, 1), cvmGet(&max, 0, 2), cvmGet(&max, 0, 3), cvmGet(&max, 0, 4));
+}
+
+//计算轮廓的pair-wise几何直方图并进行匹配
+CvHistogram* gesMatchContoursPGH(CvSeq* contour)
+{
+	//CvHistogram* hist;
+
+	//cvCalcPGH(contour, hist);
+
+	return NULL;
 }
