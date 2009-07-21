@@ -1,6 +1,8 @@
 #include "gesrec.h"
 #include <stdio.h>//////////////////////////////////////////
 
+#define PI 3.14159f
+
 //轮廓面积比较函数
 static int gesContourCompFunc(const void* _a, const void* _b, void* userdata)
 {
@@ -178,12 +180,44 @@ void gesFindContourMaxs(CvSeq* contour)
 	printf("%.2f %.2f %.2f %.2f %.2f\n", cvmGet(&max, 0, 0), cvmGet(&max, 0, 1), cvmGet(&max, 0, 2), cvmGet(&max, 0, 3), cvmGet(&max, 0, 4));
 }
 
-//计算轮廓的pair-wise几何直方图并进行匹配
-CvHistogram* gesMatchContoursPGH(CvSeq* contour)
+//计算轮廓的pair-wise几何直方图
+CvHistogram* gesCalcContoursPGH(CvSeq* contour)
 {
-	//CvHistogram* hist;
+	CvHistogram* hist;//成对几何直方图
+	CvContour* tempCont;
+	int dMax;
 
-	//cvCalcPGH(contour, hist);
+	//得到成对几何直方图第二个维度上的范围
+	tempCont = (CvContour* )contour;
+	dMax = max(tempCont->rect.height, tempCont->rect.width);
 
-	return NULL;
+	int sizes[2] = {60, dMax};
+	float ranges[2][2] = {{0,PI}, {0,(float)dMax}};
+	float** rangesPtr = new float* [2];
+	rangesPtr[0] = ranges[0];
+	rangesPtr[1] = ranges[1];
+
+	//初始化几何直方图
+	hist = cvCreateHist(2, sizes, CV_HIST_ARRAY, rangesPtr, 1);
+
+	//计算轮廓的成对几何直方图
+	cvCalcPGH(contour, hist);
+
+	return hist;
+}
+
+//对轮廓的pair-wise几何直方图进行匹配
+void gesMatchContoursPGH(CvSeq* contour, CvHistogram* templateHist)
+{
+	CvHistogram* hist;
+
+	//得到轮廓的成对几何直方图
+	hist = gesCalcContoursPGH(contour);
+
+	//直方图匹配
+	double result = cvCompareHist(hist, templateHist, CV_COMP_CORREL);
+	printf("result:%.2f\n", result);
+
+	//释放内存
+	cvReleaseHist(&hist);
 }

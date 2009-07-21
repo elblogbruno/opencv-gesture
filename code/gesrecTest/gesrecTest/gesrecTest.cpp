@@ -17,6 +17,7 @@ int getImgFromCAM(int argc, char** argv);
 IplImage secaipingheng( IplImage* seping);
 int testSecaipingheng(int argc, char** argv);
 int testMaxs(int argc, char** argv);
+int testPGH(int argc, char** argv);
 
 //显示输入图像在HSV颜色空间的H分量的直方图
 void histogram(IplImage* src, IplImage* dst)
@@ -591,6 +592,127 @@ int testMaxs(int argc, char** argv)
 	return 1;
 }
 
+//PGH法的测试
+//cmd使用说明:gesrecTest.exe [index = 7]
+int testPGH(int argc, char** argv)
+{
+	CvCapture* capture = 0;
+	IplImage* input = 0;
+	IplImage* output = 0;
+	IplImage* sampleImg;//样本图片
+	IplImage* conImg;//轮廓图片
+	CvScalar s;
+	CvSeq* comp;//连通部件
+	CvMemStorage* storage;//动态内存
+	CvSeq* contour;
+	CvMemStorage* contSto;
+	CvHistogram* hist = 0;
+	int isTemp = 0;
+	int matching = 0;
+	
+	if(argc == 3)
+	{
+		if((sampleImg = cvLoadImage(argv[2], 1)) == 0)
+		{
+			fprintf(stderr, "Could not open sample image\n");
+			return 0;
+		}
+		else
+		{
+			//获得样本图片的肤色范围
+			gesSampleSkinRange(sampleImg, &s);
+			cvReleaseImage(&sampleImg);
+		}
+	}
+
+	capture = cvCaptureFromCAM(0);
+	if(!capture)
+	{
+		fprintf(stderr, "Could not initialize capturing...\n");
+		return -1;
+	}
+
+	cvNamedWindow("Input", 1);
+	cvNamedWindow("Output", 1);
+	cvNamedWindow("Contour", 1);
+
+	//初始化动态内存
+	storage = cvCreateMemStorage(0);
+	comp = cvCreateSeq(0, sizeof(CvSeq), sizeof(CvConnectedComp), storage);
+	contSto = cvCreateMemStorage(0);
+	contour = cvCreateSeq(CV_SEQ_ELTYPE_POINT, sizeof(CvSeq), sizeof(CvPoint), contSto);
+
+	//获得第一帧
+	input = cvQueryFrame(capture);
+	if(!input)
+	{
+		return 0;
+	}
+	conImg = cvCreateImage(cvGetSize(input), IPL_DEPTH_8U, 3);
+
+	//循环捕捉,直到用户按键跳出循环体
+	for( ; ; )
+	{
+		input = cvQueryFrame(capture);
+		if(!input)
+		{
+			break;
+		}
+
+		cvReleaseImage(&output);
+		output = cvCloneImage(input);
+		if(argc == 2)
+		{
+			gesDetectHandRange(input, output, comp);
+		}
+		else
+		{
+			gesDetectHandRange(input, output, comp, &s, 1);
+		}
+
+		gesFindContours(output, conImg, &contour, contSto, 1);
+
+		if(isTemp == 1)
+		{
+			isTemp = 0;
+			matching = 1;
+			if(hist != 0)
+			{
+				cvReleaseHist(&hist);
+			}
+			hist = gesCalcContoursPGH(contour);
+		}
+
+		if(matching == 1)
+		{
+			gesMatchContoursPGH(contour, hist);
+		}
+
+		cvShowImage("Input", input);
+		cvShowImage("Output", output);
+		cvShowImage("Contour", conImg);
+		if(cvWaitKey(10) >= 20)
+		{
+			isTemp = 1;
+		}
+		else if(cvWaitKey(10) >= 0)
+		{
+			break;
+		}
+	}
+
+	cvReleaseCapture(&capture);
+	cvReleaseMemStorage(&contSto);
+	cvReleaseImage(&output);
+	cvReleaseImage(&conImg);
+	cvReleaseHist(&hist);
+	cvDestroyWindow("Input");
+	cvDestroyWindow("Output");
+	cvDestroyWindow("Contour");
+
+	return 1;
+}
+
 int main( int argc, char** argv )
 {
 	if(argc >= 2)
@@ -628,6 +750,10 @@ int main( int argc, char** argv )
 		else if(strcmp(argv[1], "6") == 0)
 		{
 			testMaxs(argc, argv);
+		}
+		else if(strcmp(argv[1], "7") == 0)
+		{
+			testPGH(argc, argv);
 		}
 		else
 		{
