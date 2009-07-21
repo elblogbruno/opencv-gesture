@@ -16,7 +16,8 @@ extern "C" __declspec(dllexport) void gesFindContours(IplImage* src, IplImage* d
 extern "C" __declspec(dllexport) void gesMatchContoursTemplate(IplImage* src, IplImage* dst, CvSeq** templateContour);
 static int gesContourCompFunc(const void* _a, const void* _b, void* userdata);
 extern "C" __declspec(dllexport) void gesFindContourMaxs(CvSeq* contour);
-extern "C" __declspec(dllexport) CvHistogram* gesMatchContoursPGH(CvSeq* contour);
+extern "C" __declspec(dllexport) CvHistogram* gesCalcContoursPGH(CvSeq* contour);
+extern "C" __declspec(dllexport) void gesMatchContoursPGH(CvSeq* contour, CvHistogram* templateHist);
 
 extern "C" __declspec(dllexport) void gesTracking(IplImage* src, IplImage* dst, CvSeq* seq, CvSeq* seq_out, CvScalar* s, int flag = 0);
 
