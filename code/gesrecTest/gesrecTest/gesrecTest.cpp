@@ -80,9 +80,15 @@ int testImgDetectHandRange(int argc, char** argv)
 	IplImage* sampleImg;//样本图片
 	IplImage* input;//要检测的图片
 	IplImage* output;//输出的结果图片
+	IplImage* gray;//////////////////////////////////////////////////////////////
+	IplImage* tempCorner;///////////////////////////////////////////////////////
+	IplImage* corner;/////////////////////////////////////////////////////////////角点
+	CvPoint2D32f corners[100];//////////////////////////////////////////////////
+	int cornerCount = 100;//////////////////////////////////////////////////
 	CvScalar s;//样本直方图
 	CvSeq* comp;//连通部件
 	CvMemStorage* storage;//动态内存
+	int i;///////////////////////////////////////////////////////////////////////////
 
 	//载入图像
 	if( argc >= 3 && 
@@ -108,6 +114,9 @@ int testImgDetectHandRange(int argc, char** argv)
 
 		//生成输出图片
 		output = cvCloneImage(input);
+		gray = cvCreateImage(cvGetSize(input), IPL_DEPTH_8U, 1);/////////////////////
+		tempCorner = cvCreateImage(cvGetSize(input), IPL_DEPTH_32F, 1);//////////////////////
+		corner = cvCreateImage(cvGetSize(input), IPL_DEPTH_32F, 1);//////////////////////
 		if(argc == 4)
 		{
 			gesDetectHandRange(input, output, comp, &s, 1);
@@ -117,18 +126,38 @@ int testImgDetectHandRange(int argc, char** argv)
 			gesDetectHandRange(input, output, comp);
 		}
 
+		cvCvtColor(output, gray, CV_BGR2GRAY);///////////////////////////////////
+		//cvPreCornerDetect(gray, corner, 3);///////////////////////////////////////////
+		//cvCornerMinEigenVal(gray, corner, 3, 3);/////////////////////////////
+		cvGoodFeaturesToTrack(gray, corner, tempCorner, corners, &cornerCount, 0.01, 30, 0, 3, 0, 0.4);///////////////////////
+		printf("num corners found: %d\n", cornerCount);///////////////////////////
+
+		if(cornerCount > 0)
+		{
+			for(i = 0;i < cornerCount;i++)
+			{
+				cvCircle(input, cvPoint((int)(corners[i].x), (int)(corners[i].y)), 6, CV_RGB(255, 0 ,0) , 2, CV_AA, 0);
+			}
+		}
+
 		cvNamedWindow("Input", 1);
 		cvShowImage("Input", input);
 		cvNamedWindow("Output", 1);
 		cvShowImage("Output", output);
+		cvNamedWindow("Corner", 1);//////////////////////////////////////////////////////
+		cvShowImage("Corner", corner);///////////////////////////////////////////////////
 
 		cvWaitKey(0); //等待按键
 
 		cvReleaseMemStorage(&storage);
 		cvDestroyWindow("Input");
-		cvDestroyWindow("Output" );
+		cvDestroyWindow("Output");
+		cvDestroyWindow("Corner");/////////////////////////////////////////////////////////
 		cvReleaseImage(&output);
 		cvReleaseImage(&input);
+		cvReleaseImage(&gray);///////////////////////////////////////////////////////
+		cvReleaseImage(&tempCorner);/////////////////////////////////////////////////
+		cvReleaseImage(&corner);/////////////////////////////////////////////////////
 		return 1;
 	}
 
