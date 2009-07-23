@@ -14,10 +14,13 @@ int testSampleHistogram(int argc, char** argv);
 int testImgDetectHandRange(int argc, char** argv);
 int testCamDetectHandRange(int argc, char** argv);
 int getImgFromCAM(int argc, char** argv);
+int testMatchTemplate(int argc, char** argv);
 IplImage secaipingheng( IplImage* seping);
 int testSecaipingheng(int argc, char** argv);
 int testMaxs(int argc, char** argv);
 int testPGH(int argc, char** argv);
+int testPGHImg(int argc, char** argv);
+int testMatchTemplate2(int argc, char** argv);
 
 //显示输入图像在HSV颜色空间的H分量的直方图
 void histogram(IplImage* src, IplImage* dst)
@@ -129,7 +132,7 @@ int testImgDetectHandRange(int argc, char** argv)
 		cvCvtColor(output, gray, CV_BGR2GRAY);///////////////////////////////////
 		//cvPreCornerDetect(gray, corner, 3);///////////////////////////////////////////
 		//cvCornerMinEigenVal(gray, corner, 3, 3);/////////////////////////////
-		cvGoodFeaturesToTrack(gray, corner, tempCorner, corners, &cornerCount, 0.01, 30, 0, 3, 0, 0.4);///////////////////////
+		cvGoodFeaturesToTrack(gray, corner, tempCorner, corners, &cornerCount, 0.2, 50, 0, 3, 0, 0.4);///////////////////////
 		printf("num corners found: %d\n", cornerCount);///////////////////////////
 
 		if(cornerCount > 0)
@@ -307,7 +310,7 @@ int getImgFromCAM(int argc, char** argv)
 }
 
 //模版匹配法的测试,色彩平衡在目前的测试中没采用(因为看不出有什么效果)
-//cmd使用说明:gesrecTest.exe [index = 4] [filename:src] ([filename:sample])
+//cmd使用说明:gesrecTest.exe [index = 4] ([filename:sample])
 int testMatchTemplate(int argc, char** argv)
 {
 	CvCapture* capture = 0;
@@ -403,6 +406,7 @@ int testMatchTemplate(int argc, char** argv)
 		}
 		if(isTemp == 1)
 		{
+			cvSaveImage("contour1.jpg", conImg);
 			isTemp = 0;
 			matching = 1;
 		}
@@ -742,6 +746,106 @@ int testPGH(int argc, char** argv)
 	return 1;
 }
 
+//PGH法的图片测试
+//cmd使用说明:gesrecTest.exe [index = 8] [filename:template] [filename:input] [filename:sample]
+int testPGHImg(int argc, char** argv)
+{
+	IplImage* templateInput;
+	IplImage* templateOutput;
+	IplImage* input = 0;
+	IplImage* output = 0;
+	IplImage* sampleImg;//样本图片
+	IplImage* conImg;//轮廓图片
+	CvScalar s;
+	CvSeq* comp;//连通部件
+	CvMemStorage* storage;//动态内存
+	CvSeq* contour;
+	CvMemStorage* contSto;
+	CvHistogram* hist = 0;
+	int isTemp = 0;
+	int matching = 0;
+	
+	templateInput = cvLoadImage(argv[2], 1);
+	input = cvLoadImage(argv[3], 1);
+
+	if(argc == 5)
+	{
+		if((sampleImg = cvLoadImage(argv[4], 1)) == 0)
+		{
+			fprintf(stderr, "Could not open sample image\n");
+			return 0;
+		}
+		else
+		{
+			//获得样本图片的肤色范围
+			gesSampleSkinRange(sampleImg, &s);
+			cvReleaseImage(&sampleImg);
+		}
+	}
+
+	cvNamedWindow("Template", 1);
+	cvNamedWindow("Input", 1);
+	cvNamedWindow("Output", 1);
+	cvNamedWindow("TemplateOutput", 1);
+
+	//初始化动态内存
+	storage = cvCreateMemStorage(0);
+	comp = cvCreateSeq(0, sizeof(CvSeq), sizeof(CvConnectedComp), storage);
+	contSto = cvCreateMemStorage(0);
+	contour = cvCreateSeq(CV_SEQ_ELTYPE_POINT, sizeof(CvSeq), sizeof(CvPoint), contSto);
+
+	conImg = cvCreateImage(cvGetSize(input), IPL_DEPTH_8U, 3);
+
+	//得到模版的PGH直方图
+	templateOutput = cvCloneImage(templateInput);
+	if(argc == 5)
+	{
+		gesDetectHandRange(templateInput, templateOutput, comp);
+	}
+	else
+	{
+		gesDetectHandRange(templateInput, templateOutput, comp, &s, 1);
+	}
+
+	gesFindContours(templateOutput, conImg, &contour, contSto, 1);
+	hist = gesCalcContoursPGH(contour);
+
+	output = cvCloneImage(input);
+	if(argc == 5)
+	{
+		gesDetectHandRange(input, output, comp);
+	}
+	else
+	{
+		gesDetectHandRange(input, output, comp, &s, 1);
+	}
+
+	gesFindContours(output, conImg, &contour, contSto, 1);
+	gesMatchContoursPGH(contour, hist);
+
+	cvShowImage("Template", templateInput);
+	cvShowImage("TemplateOutput", templateOutput);
+	cvShowImage("Input", input);
+	cvShowImage("Output", output);
+	
+	cvWaitKey(0);
+
+	cvReleaseMemStorage(&contSto);
+	cvReleaseMemStorage(&storage);
+	cvReleaseImage(&input);
+	cvReleaseImage(&templateInput);
+	cvReleaseImage(&output);
+	cvReleaseImage(&templateOutput);
+	cvReleaseImage(&conImg);
+	cvReleaseHist(&hist);
+	cvDestroyWindow("Template");
+	cvDestroyWindow("TemplateOutput");
+	cvDestroyWindow("Input");
+	cvDestroyWindow("Output");
+
+	return 1;
+}
+
 int main( int argc, char** argv )
 {
 	if(argc >= 2)
@@ -783,6 +887,10 @@ int main( int argc, char** argv )
 		else if(strcmp(argv[1], "7") == 0)
 		{
 			testPGH(argc, argv);
+		}
+		else if(strcmp(argv[1], "8") == 0)
+		{
+			testPGHImg(argc, argv);
 		}
 		else
 		{

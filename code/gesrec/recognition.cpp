@@ -81,7 +81,7 @@ void gesFindContours(IplImage* src, IplImage* dst, CvSeq** templateContour, CvMe
 		{
 			*templateContour = cvCloneSeq(cur_cont, templateStorage);
 		}
-		
+
 		CvScalar color = CV_RGB(rand()&255, rand()&255, rand()&255);
 		cvDrawContours(dst, (CvSeq* )cur_cont, color, color, -1, 1, 8);
 	}
@@ -114,6 +114,49 @@ void gesMatchContoursTemplate(IplImage* src, IplImage* dst, CvSeq** templateCont
 		double result = cvMatchShapes((CvContour* )contour, (CvContour* )(*templateContour), CV_CONTOURS_MATCH_I3);
 		printf("%.2f\n", result);/////////////////////////////////////////////
 	}
+
+	//释放内存
+	cvReleaseMemStorage(&storage);
+}
+
+//模版匹配法的完整实现
+void gesMatchContoursTemplate2(IplImage* src, IplImage* dst, CvSeq* templateContour)
+{
+	CvSeq* contour;
+	CvSeq* cur_cont;
+	CvMemStorage* storage;
+	double minValue, minIndex, tempValue;
+	int i;
+
+	//初始化动态内存
+	storage = cvCreateMemStorage(0);
+	contour = cvCreateSeq(CV_SEQ_ELTYPE_POINT, sizeof(CvSeq), sizeof(CvPoint), storage);
+
+	//得到轮廓并进行匹配
+	minIndex = -1;
+	gesFindContours(src, dst, &contour, storage, 1);
+	if(contour->total != 0)//如果得到的轮廓不为空
+	{
+		if(templateContour->total != 0)
+		{
+			cur_cont = (CvSeq* )cvGetSeqElem(templateContour, 0);
+			minValue = cvMatchShapes((CvContour* )contour, (CvContour* )cur_cont, CV_CONTOURS_MATCH_I3);
+			minIndex = 0;
+		}
+		for(i = 1;i < templateContour->total;i++)
+		{
+			cur_cont = (CvSeq* )cvGetSeqElem(templateContour, i);
+			tempValue = cvMatchShapes((CvContour* )contour, (CvContour* )cur_cont, CV_CONTOURS_MATCH_I3);
+			if(tempValue < minValue)
+			{
+				minValue = tempValue;
+				minIndex = i;
+			}
+		}
+	}
+
+	//打印匹配结果
+	printf("the result is %d\n", minIndex);
 
 	//释放内存
 	cvReleaseMemStorage(&storage);
@@ -185,14 +228,13 @@ CvHistogram* gesCalcContoursPGH(CvSeq* contour)
 {
 	CvHistogram* hist;//成对几何直方图
 	CvContour* tempCont;
-	int dMax;
-
+	
 	//得到成对几何直方图第二个维度上的范围
 	tempCont = (CvContour* )contour;
-	dMax = max(tempCont->rect.height, tempCont->rect.width);
+	cvBoundingRect(tempCont, 1);
 
-	int sizes[2] = {60, dMax};
-	float ranges[2][2] = {{0,PI}, {0,(float)dMax}};
+	int sizes[2] = {60, 200};
+	float ranges[2][2] = {{0,PI}, {0,200}};
 	float** rangesPtr = new float* [2];
 	rangesPtr[0] = ranges[0];
 	rangesPtr[1] = ranges[1];
@@ -214,8 +256,12 @@ void gesMatchContoursPGH(CvSeq* contour, CvHistogram* templateHist)
 	//得到轮廓的成对几何直方图
 	hist = gesCalcContoursPGH(contour);
 
+	//归一化直方图
+	cvNormalizeHist(templateHist, 1);
+	cvNormalizeHist(hist, 1);
+
 	//直方图匹配
-	double result = cvCompareHist(hist, templateHist, CV_COMP_CORREL);
+	double result = cvCompareHist(hist, templateHist, CV_COMP_INTERSECT);
 	printf("result:%.2f\n", result);
 
 	//释放内存
