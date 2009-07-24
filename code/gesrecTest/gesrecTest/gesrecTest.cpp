@@ -249,7 +249,7 @@ int testCamDetectHandRange(int argc, char** argv)
 		cvShowImage("Contour", conImg);
 		if(cvWaitKey(10) >= 0)
 		{
-			cvSaveImage("Contour.jpg", conImg);
+			cvSaveImage("Contour1.jpg", conImg);
 			break;
 		}
 	}

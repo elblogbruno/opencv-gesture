@@ -312,3 +312,50 @@ void gesMultiFloodFill(IplImage* src, CvSeq* comp)
 	//释放内存
 	cvReleaseImage(&mask);
 }
+
+//用于AR Game的检测手的方法
+//输入:源图像 输出:手的包围矩形 返回值为0说明没有检测到手
+int gesARDetectHand(IplImage* src, CvRect* rect, CvScalar* s, int flag)
+{
+	IplImage* dst = cvCreateImage(cvGetSize(src), IPL_DEPTH_8U, 1);
+	CvMemStorage* storage;
+	CvSeq* comp;
+	CvConnectedComp* first;
+	int retval;
+
+	//初始化动态内存
+	dst = cvCreateImage(cvGetSize(src), IPL_DEPTH_8U, 1);
+	storage = cvCreateMemStorage(0);
+	comp = cvCreateSeq(0, sizeof(CvSeq), sizeof(CvConnectedComp), storage);
+
+	//检测手
+	if(flag == 0)
+	{
+		gesDetectHandRange(src, dst, comp);
+	}
+	else
+	{
+		gesDetectHandRange(src, dst, comp, s, flag);
+	}
+
+	//得到第一个轮廓的包围矩形
+	if(comp->total > 0)
+	{
+		first = (CvConnectedComp* )cvGetSeqElem(comp ,0);
+		rect->height = first->rect.height;
+		rect->width = first->rect.width;
+		rect->x = first->rect.x;
+		rect->y = first->rect.y;
+		retval = 1;
+	}
+	else
+	{
+		retval = 0;
+	}
+
+	//释放内存并返回
+	cvReleaseImage(&dst);
+	cvReleaseMemStorage(&storage);
+
+	return retval;
+}
