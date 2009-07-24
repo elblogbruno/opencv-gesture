@@ -8,6 +8,7 @@ extern "C" __declspec(dllexport) CvHistogram* gesSampleSkinHistogram(IplImage* s
 extern "C" __declspec(dllexport) void gesDetectHandHistogram(IplImage* src, IplImage* dst, CvHistogram* histTemp, CvRect window);
 extern "C" __declspec(dllexport) void gesSampleSkinRange(IplImage* src, CvScalar* s);
 extern "C" __declspec(dllexport) void gesDetectHandRange(IplImage* src, IplImage* dst, CvSeq* comp, CvScalar* s = NULL, int flag = 0);
+extern "C" __declspec(dllexport) int gesARDetectHand(IplImage* src, CvRect* rect, CvScalar* s = NULL, int flag = 0);
 void gesGrayWorld(IplImage* src, IplImage* dst);
 static int gesRectCompFunc(const void* _a, const void* _b, void* userdata);
 void gesMultiFloodFill(IplImage* src, CvSeq* comp);
