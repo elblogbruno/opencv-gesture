@@ -14,8 +14,10 @@ int testContourTemplateMatch(int argc, char** argv)
 	IplImage* output = 0;
 
 	IplImage* sampleImg = 0;//样本图片
+	IplImage* templateImg = 0;
+	IplImage* templateImgOut = 0;
 	IplImage* conImg = 0;//轮廓图片
-	IplImage* templates = 0;
+	IplImage* templateResult = 0;
 	CvScalar s;
 	CvSeq* comp;//连通部件
 	CvMemStorage* storage;//动态内存
@@ -25,9 +27,9 @@ int testContourTemplateMatch(int argc, char** argv)
 	int isTemp = 0;
 	int matching = 0;
 
-	if(argc == 3)
+	if(argc == 2)
 	{
-		if((sampleImg = cvLoadImage(argv[2], 1)) == 0)
+		if((sampleImg = cvLoadImage(argv[1], 1)) == 0)
 		{
 			fprintf(stderr, "Could not open sample image\n");
 			return 0;
@@ -57,18 +59,24 @@ int testContourTemplateMatch(int argc, char** argv)
 	templateSto = cvCreateMemStorage(0);
 	templateContour = cvCreateSeq(CV_SEQ_ELTYPE_POINT, sizeof(CvSeq), sizeof(CvPoint), templateSto);
 
-	input = cvLoadImage("template1", 1);
-	conImg = cvCreateImage(cvGetSize(input), IPL_DEPTH_8U, 3);
-	if(argc == 2)
+	templateImg = cvLoadImage("myskin1.jpg", 1);
+	cvReleaseImage(&templateImgOut);
+	cvReleaseImage(&templateResult);
+	templateImgOut = cvCloneImage(templateImg);
+	templateResult = cvCloneImage(templateImg);
+	if(argc == 1)
 	{
-		gesDetectHandRange(input, output, comp);
+		gesDetectHandRange(templateImg, templateImgOut, comp);
 	}
-	else
+	else if(argc == 2)
 	{
-		gesDetectHandRange(input, output, comp, &s, 1);
+		gesDetectHandRange(templateImg, templateImgOut, comp, &s, 1);
 	}
-	gesFindContours(output, templates, &templateContour, templateSto, 1);
-
+	else 
+	{
+		return -1;
+	}
+	gesFindContours(templateImgOut, templateResult, &templateContour, templateSto, 1);
 
 	//获得第一帧
 	input = cvQueryFrame(capture);
@@ -76,6 +84,7 @@ int testContourTemplateMatch(int argc, char** argv)
 	{
 		return 0;
 	}
+
 	conImg = cvCreateImage(cvGetSize(input), IPL_DEPTH_8U, 3);
 
 	//循环捕捉,直到用户按键跳出循环体
@@ -89,17 +98,25 @@ int testContourTemplateMatch(int argc, char** argv)
 
 		cvReleaseImage(&output);
 		output = cvCloneImage(input);
-		if(argc == 2)
+		if(argc == 1)
 		{
+			printf("```````````````\n");
 			gesDetectHandRange(input, output, comp);
+			printf("```````````````\n");
+		}
+		else if(argc == 2)
+		{
+			printf("hell\n");
+			gesDetectHandRange(input, output, comp, &s, 1);
+			printf("hell\n");
 		}
 		else
 		{
-			gesDetectHandRange(input, output, comp, &s, 1);
+			return -1;
 		}
 
 		gesMatchContoursTemplate2(output, conImg, templateContour);
-
+		printf("--------\n");
 		cvShowImage("Input", input);
 		cvShowImage("Output", output);
 		cvShowImage("Contour", conImg);
@@ -114,9 +131,11 @@ int testContourTemplateMatch(int argc, char** argv)
 	cvReleaseCapture(&capture);
 	cvReleaseMemStorage(&storage);
 	cvReleaseMemStorage(&templateSto);
-	cvReleaseImage(&output);
+
 	cvReleaseImage(&conImg);
-	cvReleaseImage(&templates);
+	cvReleaseImage(&templateResult);
+	cvReleaseImage(&templateImg);
+	cvReleaseImage(&templateImgOut);
 	cvDestroyWindow("Input");
 	cvDestroyWindow("Output");
 	cvDestroyWindow("Contour");
