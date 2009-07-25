@@ -110,6 +110,9 @@ int testTracking(int argc, char** argv)
 	cvReleaseCapture(&capture);
 	cvReleaseMemStorage(&storage);
 	cvReleaseMemStorage(&storage1);
+	cvReleaseImage(&input);
+	cvReleaseImage(&output);
+	cvReleaseImage(&sampleImg);
 	cvDestroyWindow("Input");
 	cvDestroyWindow("Output");
 
