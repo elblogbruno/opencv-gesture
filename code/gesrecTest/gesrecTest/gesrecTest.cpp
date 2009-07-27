@@ -21,6 +21,7 @@ int testMaxs(int argc, char** argv);
 int testPGH(int argc, char** argv);
 int testPGHImg(int argc, char** argv);
 int testMatchTemplate2(int argc, char** argv);
+int testFinal(int argc, char** argv);
 
 //显示输入图像在HSV颜色空间的H分量的直方图
 void histogram(IplImage* src, IplImage* dst)
@@ -846,6 +847,85 @@ int testPGHImg(int argc, char** argv)
 	return 1;
 }
 
+int testFinal(int argc, char** argv)
+{
+	CvCapture* capture = 0;
+	CvScalar s;
+	IplImage* sampleImg;
+	IplImage* camInput;
+	IplImage* templateInput;
+	IplImage* templateOutput;
+	CvMemStorage* templateCompSto;
+	CvSeq* templateCompSeq;
+
+	if(argc == 3)
+	{
+		if((sampleImg = cvLoadImage(argv[2], 1)) == 0)
+		{
+			fprintf(stderr, "Could not open sample image\n");
+			return 0;
+		}
+		else
+		{
+			//获得样本图片的肤色范围
+			gesSampleSkinRange(sampleImg, &s);
+			cvReleaseImage(&sampleImg);
+		}
+	}
+
+	capture = cvCaptureFromCAM(0);
+	if(!capture)
+	{
+		fprintf(stderr, "Could not initialize capturing...\n");
+		return -1;
+	}
+
+	//载入模版
+	templateCompSto = cvCreateMemStorage(0);
+	templateCompSeq = cvCreateSeq(0, sizeof(CvSeq), sizeof(CvConnectedComp), templateCompSto);
+	templateInput = cvLoadImage("myskin1.jpg", 1);
+	templateOutput = cvCloneImage(templateInput);
+	if(argc == 2)
+	{
+		gesDetectHandRange(templateInput, templateOutput, templateCompSeq);
+	}
+	else
+	{
+		gesDetectHandRange(templateInput, templateOutput, templateCompSeq, &s, 1);
+	}
+
+	cvNamedWindow("TemplateOutput", 1);
+	cvShowImage("TemplateOutput", templateOutput);
+
+	//释放模版内存
+	cvReleaseImage(&templateInput);
+	cvReleaseImage(&templateOutput);
+	cvReleaseMemStorage(&templateCompSto);
+
+	//----------------------------------------------------------------------------------------------------------------//
+	
+	//初始化所有显示窗口
+	cvNamedWindow("CamInput", 1);
+
+	for( ; ; )
+	{
+		camInput = cvQueryFrame(capture);
+		cvShowImage("CamInput", camInput);
+
+		if(cvWaitKey(10) >= 0)
+		{
+			break;
+		}
+	}
+
+	//释放内存
+	cvReleaseCapture(&capture);
+	cvDestroyWindow("CamInput");
+	cvDestroyWindow("TemplateOutput");
+
+	return 1;
+}
+
 int main( int argc, char** argv )
 {
 	if(argc >= 2)
@@ -891,6 +971,10 @@ int main( int argc, char** argv )
 		else if(strcmp(argv[1], "8") == 0)
 		{
 			testPGHImg(argc, argv);
+		}
+		else if(strcmp(argv[1], "9") == 0)
+		{
+			testFinal(argc, argv);
 		}
 		else
 		{
