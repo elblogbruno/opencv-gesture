@@ -57,7 +57,8 @@ int testContourTemplateMatch(int argc, char** argv)
 	storage = cvCreateMemStorage(0);
 	comp = cvCreateSeq(0, sizeof(CvSeq), sizeof(CvConnectedComp), storage);
 	templateSto = cvCreateMemStorage(0);
-	templateContour = cvCreateSeq(CV_SEQ_ELTYPE_POINT, sizeof(CvSeq), sizeof(CvPoint), templateSto);
+	//templateContour = cvCreateSeq(CV_SEQ_ELTYPE_POINT, sizeof(CvSeq), sizeof(CvPoint), templateSto);
+	templateContour = cvCreateSeq(0, sizeof(CvSeq), sizeof(CvSeq), templateSto);
 
 	templateImg = cvLoadImage("myskin1.jpg", 1);
 	cvReleaseImage(&templateImgOut);
@@ -114,6 +115,8 @@ int testContourTemplateMatch(int argc, char** argv)
 		{
 			return -1;
 		}
+
+		//printf("aaaaaaaaaaaa");
 
 		gesMatchContoursTemplate2(output, conImg, templateContour);
 		printf("--------\n");
