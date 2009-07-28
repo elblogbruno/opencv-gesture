@@ -917,6 +917,9 @@ int testFinal(int argc, char** argv)
 	
 	loadTemplate("myskin1.jpg", templateContourImg, templateContoursSeq);
 	loadTemplate("myskin2.jpg", templateContourImg, templateContoursSeq);
+	loadTemplate("myskin3.jpg", templateContourImg, templateContoursSeq);
+	//loadTemplate("myskin4.jpg", templateContourImg, templateContoursSeq);/////////////////////与1会混淆
+	//loadTemplate("myskin5.jpg", templateContourImg, templateContoursSeq);/////////////////////与3会混淆
 
 	//----------------------------------------------------------------------------------------------------------------//
 	

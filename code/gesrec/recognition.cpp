@@ -156,7 +156,11 @@ void gesMatchContoursTemplate2(IplImage* src, IplImage* dst, CvSeq* templateCont
 			}
 			printf("%d:%.2f\n", i, tempValue);
 		}
-		//printf("the result is %.2f\n", minValue);
+		
+		if(minValue >= 0.3)
+		{
+			minIndex = -1;
+		}
 	}
 
 	//´òÓ¡Æ¥Åä½á¹û
