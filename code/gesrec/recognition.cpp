@@ -125,14 +125,12 @@ void gesMatchContoursTemplate2(IplImage* src, IplImage* dst, CvSeq* templateCont
 	CvSeq* contour;
 	CvSeq* cur_cont;
 	CvMemStorage* storage;
-	double minValue, minIndex, tempValue;
-	int i;
+	double minValue, tempValue;
+	int i, minIndex;
 
 	//初始化动态内存
 	storage = cvCreateMemStorage(0);
 	contour = cvCreateSeq(CV_SEQ_ELTYPE_POINT, sizeof(CvSeq), sizeof(CvPoint), storage);
-
-	printf("aaaaa\n");
 
 	//得到轮廓并进行匹配
 	minIndex = -1;
@@ -144,8 +142,9 @@ void gesMatchContoursTemplate2(IplImage* src, IplImage* dst, CvSeq* templateCont
 			cur_cont = (CvSeq* )cvGetSeqElem(templateContour, 0);
 			minValue = cvMatchShapes((CvContour* )contour, (CvContour* )cur_cont, CV_CONTOURS_MATCH_I3);
 			minIndex = 0;
+			printf("0:%.2f\n", minValue);
 		}
-		printf("bbbbb\n");
+		
 		for(i = 1;i < templateContour->total;i++)
 		{
 			cur_cont = (CvSeq* )cvGetSeqElem(templateContour, i);
@@ -155,7 +154,9 @@ void gesMatchContoursTemplate2(IplImage* src, IplImage* dst, CvSeq* templateCont
 				minValue = tempValue;
 				minIndex = i;
 			}
+			printf("%d:%.2f\n", i, tempValue);
 		}
+		//printf("the result is %.2f\n", minValue);
 	}
 
 	//打印匹配结果
