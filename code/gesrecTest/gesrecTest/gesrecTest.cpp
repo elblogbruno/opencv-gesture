@@ -21,6 +21,7 @@ int testMaxs(int argc, char** argv);
 int testPGH(int argc, char** argv);
 int testPGHImg(int argc, char** argv);
 int testMatchTemplate2(int argc, char** argv);
+void loadTemplate(char* filename, IplImage* templateContourImg, CvSeq* templateContours);
 int testFinal(int argc, char** argv);
 
 //显示输入图像在HSV颜色空间的H分量的直方图
@@ -250,7 +251,7 @@ int testCamDetectHandRange(int argc, char** argv)
 		cvShowImage("Contour", conImg);
 		if(cvWaitKey(10) >= 0)
 		{
-			cvSaveImage("Contour1.jpg", conImg);
+			cvSaveImage("Contour1.jpg", output);
 			break;
 		}
 	}
@@ -847,16 +848,44 @@ int testPGHImg(int argc, char** argv)
 	return 1;
 }
 
+
+void loadTemplate(char* filename, IplImage* templateContourImg, CvSeq* templateContours)
+{
+	IplImage* templateInput;
+	CvMemStorage* a_templateContourSto;
+	CvSeq* a_templateContourSeq;
+
+	a_templateContourSto = cvCreateMemStorage(0);
+	a_templateContourSeq = cvCreateSeq(CV_SEQ_ELTYPE_POINT, sizeof(CvSeq), sizeof(CvPoint), a_templateContourSto);
+
+	templateInput = cvLoadImage(filename, 1);
+	templateContourImg = cvCreateImage(cvGetSize(templateInput), IPL_DEPTH_8U, 3);
+
+	gesFindContours(templateInput, templateContourImg, &a_templateContourSeq, a_templateContourSto, 1);
+
+	//将一个模版加入
+	cvSeqPush(templateContours, a_templateContourSeq);
+	printf("ContourNum:%d\n", templateContours->total);
+
+	//释放模版内存
+	cvReleaseImage(&templateInput);
+	cvReleaseImage(&templateContourImg);
+	//cvReleaseMemStorage(&a_templateContourSto);
+}
+
 int testFinal(int argc, char** argv)
 {
 	CvCapture* capture = 0;
 	CvScalar s;
 	IplImage* sampleImg;
 	IplImage* camInput;
-	IplImage* templateInput;
-	IplImage* templateOutput;
-	CvMemStorage* templateCompSto;
-	CvSeq* templateCompSeq;
+	IplImage* camOutput = 0;
+	IplImage* camContour;
+	IplImage* templateContourImg = 0;
+	CvMemStorage* compSto;
+	CvSeq* compSeq;
+	CvMemStorage* templateContoursSto;
+	CvSeq* templateContoursSeq;
 
 	if(argc == 3)
 	{
@@ -881,36 +910,54 @@ int testFinal(int argc, char** argv)
 	}
 
 	//载入模版
-	templateCompSto = cvCreateMemStorage(0);
-	templateCompSeq = cvCreateSeq(0, sizeof(CvSeq), sizeof(CvConnectedComp), templateCompSto);
-	templateInput = cvLoadImage("myskin1.jpg", 1);
-	templateOutput = cvCloneImage(templateInput);
-	if(argc == 2)
-	{
-		gesDetectHandRange(templateInput, templateOutput, templateCompSeq);
-	}
-	else
-	{
-		gesDetectHandRange(templateInput, templateOutput, templateCompSeq, &s, 1);
-	}
-
-	cvNamedWindow("TemplateOutput", 1);
-	cvShowImage("TemplateOutput", templateOutput);
-
-	//释放模版内存
-	cvReleaseImage(&templateInput);
-	cvReleaseImage(&templateOutput);
-	cvReleaseMemStorage(&templateCompSto);
+	compSto = cvCreateMemStorage(0);
+	compSeq = cvCreateSeq(0, sizeof(CvSeq), sizeof(CvConnectedComp), compSto);
+	templateContoursSto = cvCreateMemStorage(0);
+	templateContoursSeq = cvCreateSeq(0, sizeof(CvSeq), sizeof(CvSeq), templateContoursSto);
+	
+	loadTemplate("myskin1.jpg", templateContourImg, templateContoursSeq);
+	loadTemplate("myskin2.jpg", templateContourImg, templateContoursSeq);
 
 	//----------------------------------------------------------------------------------------------------------------//
 	
 	//初始化所有显示窗口
 	cvNamedWindow("CamInput", 1);
+	cvNamedWindow("CamOutput", 1);
+	cvNamedWindow("CamContour", 1);
+
+	//获得第一帧
+	camInput = cvQueryFrame(capture);
+	if(!camInput)
+	{
+		return 0;
+	}
+	camContour = cvCreateImage(cvGetSize(camInput), IPL_DEPTH_8U, 3);
 
 	for( ; ; )
 	{
 		camInput = cvQueryFrame(capture);
+		if(!camInput)
+		{
+			break;
+		}
+
+		cvReleaseImage(&camOutput);
+		camOutput = cvCloneImage(camInput);
+
+		if(argc == 2)
+		{
+			gesDetectHandRange(camInput, camOutput, compSeq);
+		}
+		else
+		{
+			gesDetectHandRange(camInput, camOutput, compSeq, &s, 1);
+		}
+
+		gesMatchContoursTemplate2(camOutput, camContour, templateContoursSeq);
+
 		cvShowImage("CamInput", camInput);
+		cvShowImage("CamOutput", camOutput);
+		cvShowImage("CamContour", camContour);
 
 		if(cvWaitKey(10) >= 0)
 		{
@@ -920,8 +967,13 @@ int testFinal(int argc, char** argv)
 
 	//释放内存
 	cvReleaseCapture(&capture);
+	cvReleaseImage(&camOutput);
+	cvReleaseImage(&camContour);
 	cvDestroyWindow("CamInput");
-	cvDestroyWindow("TemplateOutput");
+	cvDestroyWindow("CamOutput");
+	cvDestroyWindow("CamContour");
+	cvReleaseMemStorage(&templateContoursSto);
+	cvReleaseMemStorage(&compSto);
 
 	return 1;
 }
