@@ -22,7 +22,9 @@ int testContourTemplateMatch(int argc, char** argv)
 	CvSeq* comp;//连通部件
 	CvMemStorage* storage;//动态内存
 	CvMemStorage* templateSto;
+	CvMemStorage* templateStos;
 	CvSeq* templateContour;
+	CvSeq* templateContours;
 
 	int isTemp = 0;
 	int matching = 0;
@@ -59,10 +61,10 @@ int testContourTemplateMatch(int argc, char** argv)
 	templateSto = cvCreateMemStorage(0);
 	//templateContour = cvCreateSeq(CV_SEQ_ELTYPE_POINT, sizeof(CvSeq), sizeof(CvPoint), templateSto);
 	templateContour = cvCreateSeq(0, sizeof(CvSeq), sizeof(CvSeq), templateSto);
+	templateStos = cvCreateMemStorage(0);
+	templateContours = cvCreateSeq(0, sizeof(CvSeq), sizeof(CvSeq), templateStos);
 
 	templateImg = cvLoadImage("myskin1.jpg", 1);
-	cvReleaseImage(&templateImgOut);
-	cvReleaseImage(&templateResult);
 	templateImgOut = cvCloneImage(templateImg);
 	templateResult = cvCloneImage(templateImg);
 	if(argc == 1)
@@ -77,7 +79,9 @@ int testContourTemplateMatch(int argc, char** argv)
 	{
 		return -1;
 	}
+	printf("xxxxxxxx\n");
 	gesFindContours(templateImgOut, templateResult, &templateContour, templateSto, 1);
+	cvSeqPush(templateContours, templateContour);
 
 	//获得第一帧
 	input = cvQueryFrame(capture);
@@ -116,9 +120,10 @@ int testContourTemplateMatch(int argc, char** argv)
 			return -1;
 		}
 
-		//printf("aaaaaaaaaaaa");
+		gesMatchContoursTemplate2(output, conImg, templateContours);
 
 		gesMatchContoursTemplate2(output, conImg, templateContour);
+
 		printf("--------\n");
 		cvShowImage("Input", input);
 		cvShowImage("Output", output);
