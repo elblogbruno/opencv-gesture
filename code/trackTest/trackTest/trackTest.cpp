@@ -1,7 +1,7 @@
 // gesrecTest.cpp : 定义控制台应用程序的入口点。
 //
 
-#define TIMES 100
+#define TIMES 33
 
 #include "cv.h"
 #include "highgui.h"
@@ -12,6 +12,7 @@ int testTracking(int argc, char** argv)
 {
 	CvCapture* capture = 0;
 	IplImage* output = 0;
+	IplImage* detectOutput = 0;
 	IplImage* sampleImg;//样本图片
 	CvScalar s;
 	CvSeq* comp = 0;//连通部件
@@ -60,34 +61,33 @@ int testTracking(int argc, char** argv)
 		if(!input) {
 			continue;
 		}
-
+		cvReleaseImage(&detectOutput);
+		detectOutput = cvCloneImage(input);
 		cvReleaseImage(&output);
 		output = cvCloneImage(input);
 		if( i % TIMES == 0 ) {
 			if(argc == 1) {
-				gesDetectHandRange(input, output, comp);
+				gesDetectHandRange(input, detectOutput, comp);
 			}
 			else {
-				gesDetectHandRange(input, output, comp, &s, 1);
+				gesDetectHandRange(input, detectOutput, comp, &s, 1);
 			}
 			i = 1;
 		}
 
 		if(comp->total == 0 || !comp) {
 			i = 0;
-			continue;
-		}
-
-		if(argc == 1) {
-			gesTracking(input, output, comp, curr_comp, &s);
 		} else {
-			gesTracking(input, output, comp, curr_comp, &s, 1);
+			if(argc == 1) {
+				gesTracking(input, output, comp, curr_comp, &s);
+			} else {
+				gesTracking(input, output, comp, curr_comp, &s, 1);
+			}
+			cvClearSeq(comp);
+			comp = cvCloneSeq(curr_comp);
+			
+			i++;
 		}
-		printf("hell\n\n");
-		cvClearSeq(comp);
-		comp = cvCloneSeq(curr_comp);
-		
-		i++;
 
 		cvShowImage("Input", input);
 		cvShowImage("Output", output);
@@ -101,6 +101,7 @@ int testTracking(int argc, char** argv)
 	cvReleaseMemStorage(&storage1);
 
 	cvReleaseImage(&output);
+	cvReleaseImage(&detectOutput);
 	cvDestroyWindow("Input");
 	cvDestroyWindow("Output");
 
