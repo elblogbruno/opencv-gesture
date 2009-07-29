@@ -54,9 +54,9 @@ void gesTracking(IplImage* src, IplImage* dst, CvSeq* seq, CvSeq* seq_out, CvSca
 		int tempy = 0;
 
 		// 判断区域的最左边是向外膨胀还是向内收缩
-		printf("1\n");
 		tempx = rect.x - 1;
 		tempNum = 0;
+		sign = 0;
 		for(int k = rect.y; k < min(srcYCrCb->height, rect.y + rect.height); k++) {
 			if(tempx < 0) {
 				break;
@@ -84,7 +84,9 @@ void gesTracking(IplImage* src, IplImage* dst, CvSeq* seq, CvSeq* seq_out, CvSca
 			tempx = rect.x - 1;
 			tempNum = 0;
 			for(int k = rect.y; k < min(srcYCrCb->height, rect.y + rect.height); k++) {
-				
+				if(tempx < 0) {
+					break;
+				}
 				tempS = cvGet2D(srcYCrCb, k, tempx);
 				if(tempS.val[1] >= range1 && tempS.val[1] <= range2 && 
 					tempS.val[2] >= range3 && tempS.val[2] <= range4) {
@@ -131,9 +133,9 @@ void gesTracking(IplImage* src, IplImage* dst, CvSeq* seq, CvSeq* seq_out, CvSca
 		}
 
 		// 判断区域的最右边是向外膨胀还是向内收缩
-		printf("2\n");
 		tempx = min( rect.x + rect.width + 1, srcYCrCb->width-1 );
 		tempNum = 0;
+		sign = 0;
 		for(int k = rect.y; k < min(srcYCrCb->height, rect.y + rect.height); k++) {
 			if(tempx > srcYCrCb->width-1) {
 				break;
@@ -143,8 +145,12 @@ void gesTracking(IplImage* src, IplImage* dst, CvSeq* seq, CvSeq* seq_out, CvSca
 				tempS.val[2] >= range3 && tempS.val[2] <= range4) {
 				tempNum++;
 				if(tempNum >= NUMS) {
-					rect.width += 1;
-					sign = 1;
+					if(rect.x + rect.width < srcYCrCb->width-1) {
+						rect.width += 1;
+						sign = 1;
+					} else {
+						sign = 0;
+					}
 					break;
 				}
 			} else {
@@ -156,7 +162,6 @@ void gesTracking(IplImage* src, IplImage* dst, CvSeq* seq, CvSeq* seq_out, CvSca
 		}
 		
 		// 区域的最右边向外膨胀
-		printf("2.1\n");
 		while( (rect.x + rect.width) < (srcYCrCb->width-1) && sign == 1) {
 			tempx = min( rect.x + rect.width + 1, srcYCrCb->width-1 );
 			tempNum = 0;
@@ -169,7 +174,11 @@ void gesTracking(IplImage* src, IplImage* dst, CvSeq* seq, CvSeq* seq_out, CvSca
 					tempS.val[2] >= range3 && tempS.val[2] <= range4) {
 					tempNum++;
 					if(tempNum >= NUMS) {
-						rect.width += 1;
+						if(rect.x + rect.width < srcYCrCb->width-1) {
+							rect.width += 1;
+						} else {
+							tempNum = 0;
+						}
 						break;
 					}
 				} else {
@@ -182,16 +191,13 @@ void gesTracking(IplImage* src, IplImage* dst, CvSeq* seq, CvSeq* seq_out, CvSca
 		}
 		
 		// 区域的最右边向内收缩
-		printf("2.2\n");
 		while( rect.width > 0 && sign == -1) {
-			tempx = min(rect.x + rect.width - 1, srcYCrCb->width-1);
+			tempx = min( max( rect.x + rect.width - 1, 0 ), srcYCrCb->width-1 );
 			tempNum = 0;
-			printf("2.2.x0\n");
 			for(int k = rect.y; k < min(srcYCrCb->height, rect.y + rect.height); k++) {
 				if(tempx <= rect.x) {
 					break;
 				}
-				printf("2.2.x1\n");
 				tempS = cvGet2D(srcYCrCb, k, tempx);
 				if(tempS.val[1] >= range1 && tempS.val[1] <= range2 && 
 					tempS.val[2] >= range3 && tempS.val[2] <= range4) {
@@ -204,16 +210,20 @@ void gesTracking(IplImage* src, IplImage* dst, CvSeq* seq, CvSeq* seq_out, CvSca
 				}
 			}
 			if(tempNum < NUMS) {
-				rect.width -= 1;
+				if(rect.width > 0) {
+					rect.width -= 1;
+				} else {
+					break;
+				}
 			} else {
 				break;
 			}
 		}
 
 		// 判断区域的最上方是向外膨胀还是向内收缩
-		printf("3\n");
 		tempy = rect.y - 1;
 		tempNum = 0;
+		sign = 0;
 		for(int k = rect.x; k < min(srcYCrCb->width, rect.x + rect.width); k++) {
 			if(tempy < 0) {
 				break;
@@ -263,7 +273,7 @@ void gesTracking(IplImage* src, IplImage* dst, CvSeq* seq, CvSeq* seq_out, CvSca
 		}
 		
 		// 区域的最上方向内收缩
-		while( ( rect.y < srcYCrCb->height-NUMS-1 ) && rect.height > NUMS && sign == -1) {
+		while( ( rect.y < srcYCrCb->height-1 ) && rect.height > 0 && sign == -1) {
 			tempy = rect.y + 1;
 			tempNum = 0;
 			for(int k = rect.x; k < min(srcYCrCb->width, rect.x + rect.width); k++) {
@@ -290,9 +300,9 @@ void gesTracking(IplImage* src, IplImage* dst, CvSeq* seq, CvSeq* seq_out, CvSca
 		}
 
 		// 判断区域的最下方是向外膨胀还是向内收缩
-		printf("4\n");
 		tempy = min( rect.y + rect.height + 1, srcYCrCb->height-1 );
 		tempNum = 0;
+		sign = 0;
 		for(int k = rect.x; k < min(srcYCrCb->width, rect.x + rect.width); k++) {
 			if( tempy >= srcYCrCb->height-1) {
 				break;
@@ -302,8 +312,12 @@ void gesTracking(IplImage* src, IplImage* dst, CvSeq* seq, CvSeq* seq_out, CvSca
 				tempS.val[2] >= range3 && tempS.val[2] <= range4) {
 				tempNum++;
 				if(tempNum >= NUMS) {
-					rect.height += 1;
-					sign = 1;
+					if(rect.y + rect.height < srcYCrCb->height-1) {
+						rect.height += 1;
+						sign = 1;
+					} else {
+						sign = 0;
+					}
 					break;
 				}
 			} else {
@@ -327,7 +341,11 @@ void gesTracking(IplImage* src, IplImage* dst, CvSeq* seq, CvSeq* seq_out, CvSca
 					tempS.val[2] >= range3 && tempS.val[2] <= range4) {
 					tempNum++;
 					if(tempNum >= NUMS) {
-						rect.height += 1;
+						if(rect.y + rect.height < srcYCrCb->height-1) {
+							rect.height += 1;
+						} else {
+							tempNum = 0;
+						}
 						break;
 					}
 				} else {
@@ -340,8 +358,8 @@ void gesTracking(IplImage* src, IplImage* dst, CvSeq* seq, CvSeq* seq_out, CvSca
 		}
 		
 		// 区域的最下方向内收缩
-		while( rect.height > NUMS && sign == -1) {
-			tempy = max( rect.y + rect.height - 1, 0 );
+		while( rect.height > 0 && sign == -1) {
+			tempy = min( max( rect.y + rect.height - 1, 0 ), srcYCrCb->width-1 );
 			tempNum = 0;
 			for(int k = rect.x; k < min(srcYCrCb->width, rect.x + rect.width); k++) {
 				if(tempy <= rect.y) {
@@ -359,7 +377,11 @@ void gesTracking(IplImage* src, IplImage* dst, CvSeq* seq, CvSeq* seq_out, CvSca
 				}
 			}
 			if(tempNum < NUMS) {
-				rect.height -= 1;
+				if(rect.height > 0) {
+					rect.height -= 1;
+				} else {
+					break;
+				}
 			} else {
 				break;
 			}
