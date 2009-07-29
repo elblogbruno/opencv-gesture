@@ -170,7 +170,7 @@ int testImgDetectHandRange(int argc, char** argv)
 }
 
 //检测摄像头中的皮肤
-//cmd使用说明:gesrecTest.exe [index = 2]
+//cmd使用说明:gesrecTest.exe [index = 2] [filename:sample]
 int testCamDetectHandRange(int argc, char** argv)
 {
 	CvCapture* capture = 0;
