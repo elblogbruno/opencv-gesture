@@ -120,7 +120,7 @@ void gesMatchContoursTemplate(IplImage* src, IplImage* dst, CvSeq** templateCont
 }
 
 //模版匹配法的完整实现
-void gesMatchContoursTemplate2(IplImage* src, IplImage* dst, CvSeq* templateContour)
+int gesMatchContoursTemplate2(IplImage* src, IplImage* dst, CvSeq* templateContour)
 {
 	CvSeq* contour;
 	CvSeq* cur_cont;
@@ -168,6 +168,8 @@ void gesMatchContoursTemplate2(IplImage* src, IplImage* dst, CvSeq* templateCont
 
 	//释放内存
 	cvReleaseMemStorage(&storage);
+
+	return minIndex;
 }
 
 //找出轮廓最大的5个极大值点
