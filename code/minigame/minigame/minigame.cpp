@@ -32,6 +32,7 @@ CvRect rightHand;//右手
 CvRect leftHand;//左手
 float	yrot;
 int rect_num = 0;
+int times = 0;
 
 // OpenGL初始化
 void InitGL(void)
@@ -87,9 +88,9 @@ void InitCV(void)
 	templateContoursSto = cvCreateMemStorage(0);
 	templateContoursSeq = cvCreateSeq(0, sizeof(CvSeq), sizeof(CvSeq), templateContoursSto);
 	
-	loadTemplate("myskin1.jpg", templateContourImg, templateContoursSeq);
-	loadTemplate("myskin2.jpg", templateContourImg, templateContoursSeq);
-	loadTemplate("myskin3.jpg", templateContourImg, templateContoursSeq);
+	loadTemplate("template1.jpg", templateContourImg, templateContoursSeq);
+	loadTemplate("template2.jpg", templateContourImg, templateContoursSeq);
+	loadTemplate("template3.jpg", templateContourImg, templateContoursSeq);
 	//loadTemplate("myskin4.jpg", templateContourImg, templateContoursSeq);/////////////////////与1会混淆
 	//loadTemplate("myskin5.jpg", templateContourImg, templateContoursSeq);/////////////////////与3会混淆
 
@@ -137,7 +138,7 @@ void Detect()
 		
 	if(rect_num < 3)
 	{
-		printf("Can't find all three");
+		//printf("Can't find all three");
 		return;
 	}
 
@@ -179,7 +180,6 @@ void Detect()
 					cvPoint(leftHand.x + leftHand.width, leftHand.y + leftHand.height), 
 					cvScalar(0, 0, 255), 1);
 
-	cvShowImage("CamInput", camInput);
 }
 
 void Track()
@@ -196,7 +196,7 @@ void Track()
 
 	if(rect_num < 3)
 	{
-		printf("Can't find all three");
+		//printf("Can't find all three");
 		return;
 	}
 
@@ -218,7 +218,45 @@ void Track()
 					cvPoint(leftHand.x + leftHand.width, leftHand.y + leftHand.height), 
 					cvScalar(0, 0, 255), 1);
 
-	cvShowImage("CamInput", camInput);
+}
+
+void Recognize()
+{
+	IplImage* rightHandOutput;
+	IplImage* leftHandOutput;
+	IplImage* rightHandContour;
+	IplImage* leftHandContour;
+	CvPoint2D32f center;
+	int result1 = -1;
+	int result2 = -1;
+
+	if(rightHand.width > 0 && rightHand.height > 0)
+	{
+		rightHandOutput = cvCreateImage(cvSize(rightHand.width, rightHand.height), camOutput->depth, 3);
+		center = cvPoint2D32f(rightHand.x+rightHand.width/2, rightHand.y+rightHand.height/2);
+		cvGetRectSubPix(camOutput, rightHandOutput, center);
+
+		rightHandContour = cvCreateImage(cvGetSize(rightHandOutput), IPL_DEPTH_8U, 3);
+		result1 = gesMatchContoursTemplate2(rightHandOutput, rightHandOutput, templateContoursSeq);	
+
+		cvReleaseImage(&rightHandOutput);
+		cvReleaseImage(&rightHandContour);
+	}
+	
+	if(leftHand.width > 0 && leftHand.height > 0)
+	{
+		leftHandOutput = cvCreateImage(cvSize(leftHand.width, leftHand.height), camOutput->depth, 3);
+		center = cvPoint2D32f(leftHand.x+leftHand.width/2, leftHand.y+leftHand.height/2);
+		cvGetRectSubPix(camOutput, leftHandOutput, center);
+
+		leftHandContour = cvCreateImage(cvGetSize(leftHandOutput), IPL_DEPTH_8U, 3);
+		result2 = gesMatchContoursTemplate2(leftHandOutput, leftHandOutput, templateContoursSeq);
+
+		cvReleaseImage(&leftHandOutput);
+		cvReleaseImage(&leftHandContour);
+	}
+
+	printf("result1:%d , result2:%d\n", result1, result2);
 }
 
 // 场景绘制函数
@@ -339,18 +377,25 @@ void Timer(int)
 	cvReleaseImage(&camOutput);
 	camOutput = cvCloneImage(camInput);
 
-	printf("%d\n", rect_num);
-
-	if(rect_num < 3)
+	if(rect_num < 3 || times % 30 == 0)
 	{
 		Detect();
+		times = times % 30;
 	}
 	else
 	{
 		Track();
 	}
 
-	//cvShowImage("CamInput", camInput);
+	times++;
+
+	if(rect_num == 3)
+	{
+		Recognize();
+	}
+
+	cvShowImage("CamInput", camInput);
+	//cvShowImage("CamOutput", camOutput);
 
 	glutTimerFunc(33, Timer, 0);
 }
