@@ -45,7 +45,7 @@ void gesTracking(IplImage* src, IplImage* dst, CvSeq* seq, CvSeq* seq_out, CvSca
 	cvClearSeq(seq_out);
 
 	//遍历跟踪最大的4个区域
-	while( i < min(seq_num, 4) ) {
+	while( i < min(seq_num, 3) ) {
 		sign = 0;
 		aComp = (CvConnectedComp* )cvGetSeqElem(seq, i);
 		rect = aComp->rect;
@@ -395,7 +395,7 @@ void gesTracking(IplImage* src, IplImage* dst, CvSeq* seq, CvSeq* seq_out, CvSca
 	}
 
 	//用矩形绘制连通部件
-	i = 0;
+	/*i = 0;
 	int sizeofSeq_out = seq_out->total;
 	
 	while(i < min(sizeofSeq_out, 4))
@@ -408,7 +408,7 @@ void gesTracking(IplImage* src, IplImage* dst, CvSeq* seq, CvSeq* seq_out, CvSca
 					cvPoint(aComp->rect.x + aComp->rect.width, aComp->rect.y + aComp->rect.height), 
 					cvScalar(255, 0, 0), 1);
 		i++;
-	}
+	}*/
 
 	cvReleaseImage(&srcYCrCb);
 }
