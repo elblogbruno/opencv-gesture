@@ -30,7 +30,10 @@ IplImage* templateContourImg = 0;
 CvRect head;//头
 CvRect rightHand;//右手
 CvRect leftHand;//左手
+CvRect lastRightHand;
+int headFlag, rightHandFlag, leftHandFlag;
 float	yrot;
+double translateX, translateY;
 int rect_num = 0;
 int times = 0;
 
@@ -88,9 +91,9 @@ void InitCV(void)
 	templateContoursSto = cvCreateMemStorage(0);
 	templateContoursSeq = cvCreateSeq(0, sizeof(CvSeq), sizeof(CvSeq), templateContoursSto);
 	
-	loadTemplate("template1.jpg", templateContourImg, templateContoursSeq);
+	loadTemplate("template4.jpg", templateContourImg, templateContoursSeq);
 	loadTemplate("template2.jpg", templateContourImg, templateContoursSeq);
-	loadTemplate("template3.jpg", templateContourImg, templateContoursSeq);
+	loadTemplate("template5.jpg", templateContourImg, templateContoursSeq);
 	//loadTemplate("myskin4.jpg", templateContourImg, templateContoursSeq);/////////////////////与1会混淆
 	//loadTemplate("myskin5.jpg", templateContourImg, templateContoursSeq);/////////////////////与3会混淆
 
@@ -130,6 +133,11 @@ void Detect()
 {
 	CvConnectedComp* comp;
 	CvRect temp;
+	int tempFlag;
+
+	headFlag = 0;
+	rightHandFlag = 1;
+	leftHandFlag = 2;
 
 	//得到当前帧的二值化结果
 	gesDetectHandRange(camInput, camOutput, compSeq);
@@ -152,24 +160,37 @@ void Detect()
 	//根据矩形中心确定初始时头与左右手位置
 	if((head.y+head.height/2) > (rightHand.y+rightHand.height/2))
 	{
+		tempFlag = headFlag;
+		headFlag = rightHandFlag;
+		rightHandFlag = tempFlag;
+
 		temp = head;
 		head = rightHand;
 		rightHand = temp;
 	}
 	if((head.y+head.height/2) > (leftHand.y+leftHand.height/2))
 	{
+		tempFlag = headFlag;
+		headFlag = leftHandFlag;
+		leftHandFlag = tempFlag;
+
 		temp = head;
 		head = leftHand;
 		leftHand = temp;
 	}
-	if((rightHand.x+rightHand.width/2) > (leftHand.x+leftHand.width/2))
+	if((rightHand.x+rightHand.height/2) > (leftHand.x+leftHand.height/2))
 	{
+		tempFlag = rightHandFlag;
+		rightHandFlag = leftHandFlag;
+		leftHandFlag = tempFlag;
+
 		temp = rightHand;
 		rightHand = leftHand;
 		leftHand = temp;
 	}
 
-	//用不同颜色的矩形分别表示各部分
+	lastRightHand = rightHand;
+
 	cvRectangle(camInput, cvPoint(head.x, head.y),
 					cvPoint(head.x + head.width, head.y + head.height), 
 					cvScalar(255, 255, 255), 1);
@@ -185,7 +206,7 @@ void Detect()
 void Track()
 {
 	CvConnectedComp* comp;
-
+	
 	//进行跟踪
 	gesTracking(camInput, camOutput, compSeq, rectSeq);
 
@@ -200,11 +221,11 @@ void Track()
 		return;
 	}
 
-	comp = (CvConnectedComp*)cvGetSeqElem(compSeq, 0);
+	comp = (CvConnectedComp*)cvGetSeqElem(compSeq, headFlag);
 	head = comp->rect;
-	comp = (CvConnectedComp*)cvGetSeqElem(compSeq, 1);
+	comp = (CvConnectedComp*)cvGetSeqElem(compSeq, rightHandFlag);
 	rightHand = comp->rect;
-	comp = (CvConnectedComp*)cvGetSeqElem(compSeq, 2);
+	comp = (CvConnectedComp*)cvGetSeqElem(compSeq, leftHandFlag);
 	leftHand = comp->rect;
 
 	//用不同颜色的矩形分别表示各部分
@@ -218,6 +239,10 @@ void Track()
 					cvPoint(leftHand.x + leftHand.width, leftHand.y + leftHand.height), 
 					cvScalar(0, 0, 255), 1);
 
+	//计算位移
+	translateX += ((double)(rightHand.x) - lastRightHand.x)/50;
+	translateY -= ((double)(rightHand.y) - lastRightHand.y)/50;
+	lastRightHand = rightHand;
 }
 
 void Recognize()
@@ -257,6 +282,19 @@ void Recognize()
 	}
 
 	printf("result1:%d , result2:%d\n", result1, result2);
+
+	if(result2 == 0)
+	{
+		yrot = ((int)yrot + 10) % 360;
+	}
+	else if(result2 == 1)
+	{
+		yrot = ((int)yrot + 350) % 360;
+	}
+	else if(result2 == 2)
+	{
+
+	}
 }
 
 // 场景绘制函数
@@ -266,7 +304,7 @@ void Display(void)
 	glLoadIdentity();
 
 	// 绘制一个旋转的三角锥体
-	glTranslatef(0.0f,0.0f,-10.0f);
+	glTranslatef(translateX,translateY,-10.0f);
 	glRotatef(yrot,0.0f,1.0f,0.0f);
 
 	glBegin(GL_TRIANGLE_FAN);
@@ -377,10 +415,10 @@ void Timer(int)
 	cvReleaseImage(&camOutput);
 	camOutput = cvCloneImage(camInput);
 
-	if(rect_num < 3 || times % 30 == 0)
+	if(rect_num < 3 || times % 60 == 0)
 	{
 		Detect();
-		times = times % 30;
+		times = times % 60;
 	}
 	else
 	{
@@ -395,6 +433,7 @@ void Timer(int)
 	}
 
 	cvShowImage("CamInput", camInput);
+	glutPostRedisplay();
 	//cvShowImage("CamOutput", camOutput);
 
 	glutTimerFunc(33, Timer, 0);
