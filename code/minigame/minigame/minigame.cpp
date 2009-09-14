@@ -21,11 +21,17 @@ CvMemStorage* compSto;
 CvSeq* compSeq;
 CvMemStorage* templateContoursSto;
 CvSeq* templateContoursSeq;
+CvSeq* rectSeq;//存储矩形区域
+CvMemStorage* rectSto;
 IplImage* camInput;
 IplImage* camOutput = 0;
 IplImage* camContour;
 IplImage* templateContourImg = 0;
+CvRect head;//头
+CvRect rightHand;//右手
+CvRect leftHand;//左手
 float	yrot;
+int rect_num = 0;
 
 // OpenGL初始化
 void InitGL(void)
@@ -95,6 +101,11 @@ void InitCV(void)
 	}
 	camContour = cvCreateImage(cvGetSize(camInput), IPL_DEPTH_8U, 3);
 
+	//初始化后面用矩形存储
+	rectSto = cvCreateMemStorage(0);
+	rectSeq = cvCreateSeq(0, sizeof(CvSeq), sizeof(CvConnectedComp), rectSto);
+
+	cvNamedWindow("CamInput", 1);
 	cvNamedWindow("CamOutput", 1);
 	cvNamedWindow("CamContour", 1);
 }
@@ -105,10 +116,109 @@ void ReleaseCV(void)
 	cvReleaseCapture(&capture);
 	cvReleaseImage(&camOutput);
 	cvReleaseImage(&camContour);
+	cvDestroyWindow("CamInout");
 	cvDestroyWindow("CamOutput");
 	cvDestroyWindow("CamContour");
 	cvReleaseMemStorage(&templateContoursSto);
 	cvReleaseMemStorage(&compSto);
+	cvReleaseMemStorage(&rectSto);
+}
+
+//开始检测左右手与头
+void Detect()
+{
+	CvConnectedComp* comp;
+	CvRect temp;
+
+	//得到当前帧的二值化结果
+	gesDetectHandRange(camInput, camOutput, compSeq);
+
+	rect_num = compSeq->total;
+		
+	if(rect_num < 3)
+	{
+		printf("Can't find all three");
+		return;
+	}
+
+	comp = (CvConnectedComp*)cvGetSeqElem(compSeq, 0);
+	head = comp->rect;
+	comp = (CvConnectedComp*)cvGetSeqElem(compSeq, 1);
+	rightHand = comp->rect;
+	comp = (CvConnectedComp*)cvGetSeqElem(compSeq, 2);
+	leftHand = comp->rect;
+	
+	//根据矩形中心确定初始时头与左右手位置
+	if((head.y+head.height/2) > (rightHand.y+rightHand.height/2))
+	{
+		temp = head;
+		head = rightHand;
+		rightHand = temp;
+	}
+	if((head.y+head.height/2) > (leftHand.y+leftHand.height/2))
+	{
+		temp = head;
+		head = leftHand;
+		leftHand = temp;
+	}
+	if((rightHand.x+rightHand.width/2) > (leftHand.x+leftHand.width/2))
+	{
+		temp = rightHand;
+		rightHand = leftHand;
+		leftHand = temp;
+	}
+
+	//用不同颜色的矩形分别表示各部分
+	cvRectangle(camInput, cvPoint(head.x, head.y),
+					cvPoint(head.x + head.width, head.y + head.height), 
+					cvScalar(255, 255, 255), 1);
+	cvRectangle(camInput, cvPoint(rightHand.x, rightHand.y),
+					cvPoint(rightHand.x + rightHand.width, rightHand.y + rightHand.height), 
+					cvScalar(0, 255, 0), 1);
+	cvRectangle(camInput, cvPoint(leftHand.x, leftHand.y),
+					cvPoint(leftHand.x + leftHand.width, leftHand.y + leftHand.height), 
+					cvScalar(0, 0, 255), 1);
+
+	cvShowImage("CamInput", camInput);
+}
+
+void Track()
+{
+	CvConnectedComp* comp;
+
+	//进行跟踪
+	gesTracking(camInput, camOutput, compSeq, rectSeq);
+
+	cvClearSeq(compSeq);
+	compSeq = cvCloneSeq(rectSeq);
+
+	rect_num = compSeq->total;
+
+	if(rect_num < 3)
+	{
+		printf("Can't find all three");
+		return;
+	}
+
+	comp = (CvConnectedComp*)cvGetSeqElem(compSeq, 0);
+	head = comp->rect;
+	comp = (CvConnectedComp*)cvGetSeqElem(compSeq, 1);
+	rightHand = comp->rect;
+	comp = (CvConnectedComp*)cvGetSeqElem(compSeq, 2);
+	leftHand = comp->rect;
+
+	//用不同颜色的矩形分别表示各部分
+	cvRectangle(camInput, cvPoint(head.x, head.y),
+					cvPoint(head.x + head.width, head.y + head.height), 
+					cvScalar(255, 255, 255), 1);
+	cvRectangle(camInput, cvPoint(rightHand.x, rightHand.y),
+					cvPoint(rightHand.x + rightHand.width, rightHand.y + rightHand.height), 
+					cvScalar(0, 255, 0), 1);
+	cvRectangle(camInput, cvPoint(leftHand.x, leftHand.y),
+					cvPoint(leftHand.x + leftHand.width, leftHand.y + leftHand.height), 
+					cvScalar(0, 0, 255), 1);
+
+	cvShowImage("CamInput", camInput);
 }
 
 // 场景绘制函数
@@ -192,16 +302,18 @@ void arrow_keys(int a_keys, int x, int y)
 
 void Timer(int)
 {
-	camInput = cvQueryFrame(capture);
+	/*camInput = cvQueryFrame(capture);
 	if(!camInput)
 	{
 		return;
 	}
-
+	
 	cvReleaseImage(&camOutput);
 	camOutput = cvCloneImage(camInput);
 
 	gesDetectHandRange(camInput, camOutput, compSeq);
+	
+	Detect();
 
 	int result = gesMatchContoursTemplate2(camOutput, camContour, templateContoursSeq);
 
@@ -218,6 +330,28 @@ void Timer(int)
 	cvShowImage("CamContour", camContour);
 
 	glutPostRedisplay();
+	glutTimerFunc(33, Timer, 0);*/
+	
+	//得到当前帧
+	camInput = cvQueryFrame(capture);
+
+	//释放前一帧的二值化结果
+	cvReleaseImage(&camOutput);
+	camOutput = cvCloneImage(camInput);
+
+	printf("%d\n", rect_num);
+
+	if(rect_num < 3)
+	{
+		Detect();
+	}
+	else
+	{
+		Track();
+	}
+
+	//cvShowImage("CamInput", camInput);
+
 	glutTimerFunc(33, Timer, 0);
 }
 
