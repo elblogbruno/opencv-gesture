@@ -140,7 +140,7 @@ int gesMatchContoursTemplate2(IplImage* src, IplImage* dst, CvSeq* templateConto
 		if(templateContour->total != 0)
 		{
 			cur_cont = (CvSeq* )cvGetSeqElem(templateContour, 0);
-			minValue = cvMatchShapes((CvContour* )contour, (CvContour* )cur_cont, CV_CONTOURS_MATCH_I3);
+			minValue = cvMatchShapes((CvContour* )contour, (CvContour* )cur_cont, CV_CONTOURS_MATCH_I1);
 			minIndex = 0;
 			printf("0:%.2f\n", minValue);
 		}
