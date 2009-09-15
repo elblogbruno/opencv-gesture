@@ -11,8 +11,8 @@
 
 // 定义窗口的标题、宽度、高度
 #define WIN_TITLE "Minigame"
-const int WIN_WIDTH=400;
-const int WIN_HEIGHT=400;
+const int WIN_WIDTH=600;
+const int WIN_HEIGHT=600;
 BOOL isFullScreen = FALSE;
 
 // 用户变量定义
@@ -34,6 +34,7 @@ CvRect lastRightHand;
 int headFlag, rightHandFlag, leftHandFlag;
 float	yrot;
 double translateX, translateY;
+int result1, result2;
 int rect_num = 0;
 int times = 0;
 
@@ -91,8 +92,11 @@ void InitCV(void)
 	templateContoursSto = cvCreateMemStorage(0);
 	templateContoursSeq = cvCreateSeq(0, sizeof(CvSeq), sizeof(CvSeq), templateContoursSto);
 	
-	loadTemplate("template4.jpg", templateContourImg, templateContoursSeq);
+	loadTemplate("template0.jpg", templateContourImg, templateContoursSeq);
+	loadTemplate("template1.jpg", templateContourImg, templateContoursSeq);
 	loadTemplate("template2.jpg", templateContourImg, templateContoursSeq);
+	loadTemplate("template3.jpg", templateContourImg, templateContoursSeq);
+	loadTemplate("template4.jpg", templateContourImg, templateContoursSeq);
 	loadTemplate("template5.jpg", templateContourImg, templateContoursSeq);
 	//loadTemplate("myskin4.jpg", templateContourImg, templateContoursSeq);/////////////////////与1会混淆
 	//loadTemplate("myskin5.jpg", templateContourImg, templateContoursSeq);/////////////////////与3会混淆
@@ -110,8 +114,8 @@ void InitCV(void)
 	rectSeq = cvCreateSeq(0, sizeof(CvSeq), sizeof(CvConnectedComp), rectSto);
 
 	cvNamedWindow("CamInput", 1);
-	cvNamedWindow("CamOutput", 1);
-	cvNamedWindow("CamContour", 1);
+	//cvNamedWindow("CamOutput", 1);
+	//cvNamedWindow("CamContour", 1);
 }
 
 // OpenCV内存释放
@@ -121,8 +125,8 @@ void ReleaseCV(void)
 	cvReleaseImage(&camOutput);
 	cvReleaseImage(&camContour);
 	cvDestroyWindow("CamInout");
-	cvDestroyWindow("CamOutput");
-	cvDestroyWindow("CamContour");
+	//cvDestroyWindow("CamOutput");
+	//cvDestroyWindow("CamContour");
 	cvReleaseMemStorage(&templateContoursSto);
 	cvReleaseMemStorage(&compSto);
 	cvReleaseMemStorage(&rectSto);
@@ -240,8 +244,24 @@ void Track()
 					cvScalar(0, 0, 255), 1);
 
 	//计算位移
-	translateX += ((double)(rightHand.x) - lastRightHand.x)/50;
+	translateX -= ((double)(rightHand.x) - lastRightHand.x)/50;
 	translateY -= ((double)(rightHand.y) - lastRightHand.y)/50;
+	if(translateX > 2)
+	{
+		translateX = 2;
+	}
+	else if(translateX < -2)
+	{
+		translateX = -2;
+	}
+	if(translateY > 2)
+	{
+		translateY = 2;
+	}
+	else if(translateY < -2)
+	{
+		translateY = -2;
+	}
 	lastRightHand = rightHand;
 }
 
@@ -252,8 +272,9 @@ void Recognize()
 	IplImage* rightHandContour;
 	IplImage* leftHandContour;
 	CvPoint2D32f center;
-	int result1 = -1;
-	int result2 = -1;
+
+	result1 = -1;
+	result2 = -1;
 
 	if(rightHand.width > 0 && rightHand.height > 0)
 	{
@@ -297,6 +318,18 @@ void Recognize()
 	}
 }
 
+void Draw(void)
+{
+	glBegin(GL_TRIANGLE_FAN);
+	glColor3f(0.5f,0.0f,0.0f); glVertex3f( 0.0f, 0.5f, 0.0f);
+	glColor3f(0.0f,0.5f,0.0f); glVertex3f(-0.5f,-0.5f, 0.5f);
+	glColor3f(0.0f,0.0f,0.5f); glVertex3f( 0.5f,-0.5f, 0.5f);
+	glColor3f(0.0f,0.5f,0.0f); glVertex3f( 0.5f,-0.5f,-0.5f);
+	glColor3f(0.0f,0.0f,0.5f); glVertex3f(-0.5f,-0.5f,-0.5f);
+	glColor3f(0.0f,0.5f,0.0f); glVertex3f(-0.5f,-0.5f, 0.5f);
+	glEnd();
+}
+
 // 场景绘制函数
 void Display(void)
 {
@@ -305,19 +338,92 @@ void Display(void)
 
 	// 绘制一个旋转的三角锥体
 	glTranslatef(translateX,translateY,-10.0f);
-	glRotatef(yrot,0.0f,1.0f,0.0f);
+	//glRotatef(yrot,0.0f,1.0f,0.0f);
 
-	glBegin(GL_TRIANGLE_FAN);
-		glColor3f(1.0f,0.0f,0.0f); glVertex3f( 0.0f, 1.0f, 0.0f);
+	switch(result2)
+	{
+	case 1:
+		Draw();
+	break;
 
-		glColor3f(0.0f,1.0f,0.0f); glVertex3f(-1.0f,-1.0f, 1.0f);
-		glColor3f(0.0f,0.0f,1.0f); glVertex3f( 1.0f,-1.0f, 1.0f);
-		glColor3f(0.0f,1.0f,0.0f); glVertex3f( 1.0f,-1.0f,-1.0f);
-		glColor3f(0.0f,0.0f,1.0f); glVertex3f(-1.0f,-1.0f,-1.0f);
-		glColor3f(0.0f,1.0f,0.0f); glVertex3f(-1.0f,-1.0f, 1.0f);
-	glEnd();
+	case 2:
+		glPushMatrix();
+		glTranslatef(0,1,0);
+		Draw();
+		glPopMatrix();
 
-	yrot+=0.15f;
+		glPushMatrix();
+		glTranslatef(0,-1,0);
+		Draw();
+		glPopMatrix();
+	break;
+
+	case 3:
+		glPushMatrix();
+		Draw();
+		glPopMatrix();
+
+		glPushMatrix();
+		glTranslatef(0,1,0);
+		Draw();
+		glPopMatrix();
+
+		glPushMatrix();
+		glTranslatef(0,-1,0);
+		Draw();
+		glPopMatrix();
+	break;
+
+	case 4:
+		glPushMatrix();
+		glTranslatef(0.5,1,0);
+		Draw();
+		glPopMatrix();
+
+		glPushMatrix();
+		glTranslatef(-0.5,1,0);
+		Draw();
+		glPopMatrix();
+
+		glPushMatrix();
+		glTranslatef(-0.5,-1,0);
+		Draw();
+		glPopMatrix();
+
+		glPushMatrix();
+		glTranslatef(0.5,-1,0);
+		Draw();
+		glPopMatrix();
+	break;
+
+	case 5:
+		glPushMatrix();
+		Draw();
+		glPopMatrix();
+
+		glPushMatrix();
+		glTranslatef(0.5,1,0);
+		Draw();
+		glPopMatrix();
+
+		glPushMatrix();
+		glTranslatef(-0.5,1,0);
+		Draw();
+		glPopMatrix();
+
+		glPushMatrix();
+		glTranslatef(-0.5,-1,0);
+		Draw();
+		glPopMatrix();
+
+		glPushMatrix();
+		glTranslatef(0.5,-1,0);
+		Draw();
+		glPopMatrix();
+	break;
+	}
+
+	//yrot += 0.15f;
 
 	glutSwapBuffers ( );	// 交换双缓存
 }
