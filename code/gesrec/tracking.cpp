@@ -7,7 +7,7 @@
 //dst: result image data of the function, output
 //seq: sequence of areas to track of last frame, input
 //seq_out: sequence of areas to track of current frame, output
-//s: sample skin color range of current capture, input
+//s: sample skin color range of current capture, input, default to ben NULL
 //flag: sign to decide whether to use default sample skin color range
 void gesTracking(IplImage* src, IplImage* dst, CvSeq* seq, CvSeq* seq_out, CvScalar* s, int flag) {
 	
